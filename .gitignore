@@ -1,0 +1,22 @@
+## Build outputs
+bin/
+obj/
+dist/
+publish/
+
+## PyInstaller (legacy)
+*.spec
+build/
+
+## IDE
+.vs/
+*.user
+*.suo
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## User data (stored in OneDrive, not in repo)
+contacts.json
