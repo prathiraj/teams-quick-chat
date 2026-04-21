@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,23 +28,21 @@ jobs:
 
       - name: Determine version
         id: version
-        shell: pwsh
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $ver = "${{ inputs.version }}"
-          } else {
-            $ver = "${{ github.ref_name }}".TrimStart("v")
-          }
-          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
-          echo "TAG=v$ver" >> $env:GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VER="${{ inputs.version }}"
+          else
+            VER=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          fi
+          echo "VERSION=$VER" >> "$GITHUB_OUTPUT"
+          echo "TAG=v$VER" >> "$GITHUB_OUTPUT"
 
       - name: Publish
-        run: dotnet publish -c Release -o publish
+        run: dotnet publish -c Release -r win-x64 -p:EnableWindowsTargeting=true -o publish
 
       - name: Create zip
-        shell: pwsh
         run: |
-          Compress-Archive -Path publish\* -DestinationPath "TeamsQuickChat-${{ steps.version.outputs.VERSION }}-win-x64.zip"
+          cd publish && zip -r "../TeamsQuickChat-${{ steps.version.outputs.VERSION }}-win-x64.zip" .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
