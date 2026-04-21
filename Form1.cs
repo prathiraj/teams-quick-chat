@@ -33,6 +33,9 @@ public partial class Form1 : Form
 
         // Start hidden — user clicks tray icon to show
         Visible = false;
+
+        // Auto-check for updates on startup (fire-and-forget, silent on failure)
+        _ = UpdateChecker.PromptAndUpdateAsync(showUpToDate: false);
     }
 
     private void SetupTrayIcon()
@@ -60,6 +63,8 @@ public partial class Form1 : Form
 
         // Right-click context menu for exit
         var menu = new ContextMenuStrip();
+        menu.Items.Add("Check for updates", null, async (_, _) => await UpdateChecker.PromptAndUpdateAsync(showUpToDate: true));
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => { trayIcon.Visible = false; Application.Exit(); });
         trayIcon.ContextMenuStrip = menu;
     }

@@ -38,7 +38,7 @@ jobs:
           echo "TAG=v$VER" >> "$GITHUB_OUTPUT"
 
       - name: Publish
-        run: dotnet publish -c Release -r win-x64 -p:SelfContained=true -p:EnableWindowsTargeting=true -o publish
+        run: dotnet publish -c Release -r win-x64 -p:SelfContained=true -p:EnableWindowsTargeting=true -p:Version=${{ steps.version.outputs.VERSION }} -o publish
 
       - name: Create zip
         run: |

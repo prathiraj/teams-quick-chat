@@ -22,6 +22,8 @@ UninstallDisplayIcon={app}\TeamsQuickChat.exe
 WizardStyle=modern
 DisableProgramGroupPage=yes
 DisableDirPage=yes
+CloseApplications=yes
+RestartApplications=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

@@ -29,7 +29,7 @@ $issPath = Join-Path $repoRoot "installer\TeamsQuickChat.iss"
 
 # --- Build ---
 Write-Host "==> Building TeamsQuickChat $tag (self-contained) ..." -ForegroundColor Cyan
-dotnet publish $repoRoot -c Release -o $publishDir
+dotnet publish $repoRoot -c Release -o $publishDir /p:Version=$Version
 if ($LASTEXITCODE -ne 0) { Write-Error "Build failed"; exit 1 }
 
 # --- Portable zip ---
