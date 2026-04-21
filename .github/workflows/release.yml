@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $ver = "${{ inputs.version }}"
+          } else {
+            $ver = "${{ github.ref_name }}".TrimStart("v")
+          }
+          echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
+          echo "TAG=v$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Publish
+        run: dotnet publish -c Release -o publish
+
+      - name: Create zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish\* -DestinationPath "TeamsQuickChat-${{ steps.version.outputs.VERSION }}-win-x64.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.TAG }}
+          name: TeamsQuickChat ${{ steps.version.outputs.TAG }}
+          generate_release_notes: true
+          files: "TeamsQuickChat-${{ steps.version.outputs.VERSION }}-win-x64.zip"
