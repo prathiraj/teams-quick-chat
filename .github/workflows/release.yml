@@ -38,17 +38,35 @@ jobs:
           echo "TAG=v$VER" >> "$GITHUB_OUTPUT"
 
       - name: Publish
-        run: dotnet publish -c Release -r win-x64 -p:EnableWindowsTargeting=true -o publish
+        run: dotnet publish -c Release -r win-x64 -p:SelfContained=true -p:EnableWindowsTargeting=true -o publish
 
       - name: Create zip
         run: |
           cd publish && zip -r "../TeamsQuickChat-${{ steps.version.outputs.VERSION }}-win-x64.zip" .
 
+      - name: Install Inno Setup
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq innoextract wine64 > /dev/null 2>&1
+          mkdir -p /tmp/inno
+          curl -sL "https://files.jrsoftware.org/is/6/innosetup-6.4.3.exe" -o /tmp/inno/is-setup.exe
+
+      - name: Build installer
+        run: |
+          cd ${{ github.workspace }}
+          wine /tmp/inno/is-setup.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR="C:\\InnoSetup" 2>/dev/null || true
+          wine "C:\\InnoSetup\\ISCC.exe" "/DAppVersion=${{ steps.version.outputs.VERSION }}" installer/TeamsQuickChat.iss 2>/dev/null || echo "::warning::Inno Setup build failed on Linux runner; installer not included"
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          ASSETS="TeamsQuickChat-${{ steps.version.outputs.VERSION }}-win-x64.zip"
+          INSTALLER="installer/Output/TeamsQuickChatSetup-${{ steps.version.outputs.VERSION }}.exe"
+          if [ -f "$INSTALLER" ]; then
+            ASSETS="$ASSETS $INSTALLER"
+          fi
           gh release create "${{ steps.version.outputs.TAG }}" \
-            "TeamsQuickChat-${{ steps.version.outputs.VERSION }}-win-x64.zip" \
+            $ASSETS \
             --title "TeamsQuickChat ${{ steps.version.outputs.TAG }}" \
             --generate-notes

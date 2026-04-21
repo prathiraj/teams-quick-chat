@@ -19,14 +19,29 @@ A lightweight Windows system-tray app that lets you **one-click open a Microsoft
 ### Prerequisites
 
 - Windows 10/11
-- [.NET 9 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) (or the SDK if you want to build from source)
 - Microsoft Teams desktop app (for `msteams:` protocol handling)
 - OneDrive syncing `OneDrive - Microsoft` folder (for contact roaming)
 
-### Option 1: Build from source (recommended)
+> **Note:** The installer and release binaries are self-contained — no .NET runtime install needed.
+
+### Option 1: Installer (recommended)
+
+Download `TeamsQuickChatSetup-x.x.x.exe` from the [Releases](../../releases) page and run it.
+
+The installer will:
+- Install to `%LOCALAPPDATA%\TeamsQuickChat` (no admin required)
+- Create a Start Menu shortcut
+- Optionally configure auto-start on Windows login
+- Launch the app after installation
+
+### Option 2: Portable zip
+
+Download `TeamsQuickChat-x.x.x-win-x64.zip` from the [Releases](../../releases) page, extract anywhere, and run `TeamsQuickChat.exe`.
+
+### Option 3: Build from source
 
 ```powershell
-git clone https://github.com/<your-username>/teams-quick-chat.git
+git clone https://github.com/pchakka_microsoft/teams-quick-chat.git
 cd teams-quick-chat
 dotnet publish -c Release
 ```
@@ -36,10 +51,6 @@ The exe will be at:
 bin\Release\net9.0-windows\win-x64\publish\TeamsQuickChat.exe
 ```
 
-### Option 2: Download release
-
-Download `TeamsQuickChat.exe` from the [Releases](../../releases) page.
-
 ### Pin to system tray
 
 1. Run `TeamsQuickChat.exe`
@@ -48,7 +59,7 @@ Download `TeamsQuickChat.exe` from the [Releases](../../releases) page.
 
 ### Auto-start on login (optional)
 
-Press `Win+R`, type `shell:startup`, and place a shortcut to `TeamsQuickChat.exe` in that folder.
+If you used the installer, auto-start is configured during setup. For portable installs, press `Win+R`, type `shell:startup`, and place a shortcut to `TeamsQuickChat.exe` in that folder.
 
 ## Usage
 
@@ -95,7 +106,10 @@ teams-quick-chat/
 ├── TeamsDeepLink.cs        # msteams: protocol launcher
 ├── AddContactDialog.cs     # Modal dialog for adding contacts
 ├── TeamsQuickChat.csproj   # .NET 9 WinForms project
-└── icon.ico                # App icon (chat bubble)
+├── icon.ico                # App icon (chat bubble)
+├── installer/
+│   └── TeamsQuickChat.iss  # Inno Setup installer script
+└── release.ps1             # Build + publish release script
 ```
 
 ## Building
@@ -104,8 +118,11 @@ teams-quick-chat/
 # Debug build
 dotnet build
 
-# Release publish (single-file exe)
+# Release publish (self-contained single-file exe)
 dotnet publish -c Release
+
+# Build and publish a GitHub release (requires gh CLI + Inno Setup)
+.\release.ps1 -Version 1.1.0
 ```
 
 ## License
