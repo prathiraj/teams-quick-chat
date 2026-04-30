@@ -6,6 +6,7 @@ public partial class Form1 : Form
 {
     private FlowLayoutPanel contactPanel = null!;
     private NotifyIcon trayIcon = null!;
+    private bool _allowVisible = false;
 
     // Drag-and-drop reordering state
     private Panel? _dragRow;
@@ -34,12 +35,18 @@ public partial class Form1 : Form
         SetupTrayIcon();
         BuildUI();
         RefreshContacts();
+    }
 
-        // Start hidden — user clicks tray icon to show
-        Visible = false;
-
-        // Auto-check for updates on startup (fire-and-forget, silent on failure)
-        _ = UpdateChecker.PromptAndUpdateAsync(showUpToDate: false);
+    protected override void SetVisibleCore(bool value)
+    {
+        // Suppress the initial show — only allow after first tray click
+        if (!_allowVisible)
+        {
+            _allowVisible = true;
+            base.SetVisibleCore(false);
+            return;
+        }
+        base.SetVisibleCore(value);
     }
 
     private void SetupTrayIcon()
