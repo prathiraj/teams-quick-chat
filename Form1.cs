@@ -29,7 +29,7 @@ public partial class Form1 : Form
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.Manual;
-        BackColor = Color.FromArgb(243, 243, 243);
+        BackColor = Color.White;
         Padding = new Padding(1);
         ClientSize = new Size(320, 400);
 
@@ -134,7 +134,7 @@ public partial class Form1 : Form
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
-        using var pen = new Pen(Color.FromArgb(200, 200, 200), 1);
+        using var pen = new Pen(Color.FromArgb(229, 231, 235), 1);
         e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 
@@ -186,31 +186,31 @@ public partial class Form1 : Form
 
     private void BuildUI()
     {
-        // Header with drag support
+        // Header
         var header = new Panel
         {
             Dock = DockStyle.Top,
-            Height = 44,
-            BackColor = Color.FromArgb(243, 243, 243)
+            Height = 48,
+            BackColor = Color.White
         };
 
         var title = new Label
         {
-            Text = "  Teams Quick Chat",
-            Font = new Font("Segoe UI", 11, FontStyle.Bold),
+            Text = "Teams Quick Chat",
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
             ForeColor = Color.FromArgb(30, 30, 30),
-            Location = new Point(4, 10),
+            Location = new Point(16, 14),
             AutoSize = true
         };
 
         var addBtn = new Button
         {
             Text = "+",
-            Font = new Font("Segoe UI", 12),
+            Font = new Font("Segoe UI", 14),
             FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(230, 230, 230),
-            ForeColor = Color.FromArgb(30, 30, 30),
-            Size = new Size(32, 32),
+            BackColor = Color.FromArgb(238, 238, 238),
+            ForeColor = Color.FromArgb(50, 50, 50),
+            Size = new Size(28, 28),
             Cursor = Cursors.Hand,
             TextAlign = ContentAlignment.MiddleCenter,
             Padding = Padding.Empty,
@@ -218,8 +218,8 @@ public partial class Form1 : Form
             UseCompatibleTextRendering = true,
             Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
-        addBtn.Location = new Point(header.ClientSize.Width - addBtn.Width - 12, 6);
-        addBtn.FlatAppearance.BorderColor = Color.FromArgb(200, 200, 200);
+        addBtn.Location = new Point(header.ClientSize.Width - addBtn.Width - 16, 10);
+        addBtn.FlatAppearance.BorderSize = 0;
         addBtn.Click += (_, _) =>
         {
             using var dlg = new AddContactDialog();
@@ -235,7 +235,7 @@ public partial class Form1 : Form
         {
             Dock = DockStyle.Top,
             Height = 1,
-            BackColor = Color.FromArgb(220, 220, 220)
+            BackColor = Color.FromArgb(229, 231, 235)
         };
         Controls.Add(sep);
         sep.BringToFront();
@@ -247,8 +247,8 @@ public partial class Form1 : Form
             AutoScroll = true,
             FlowDirection = FlowDirection.TopDown,
             WrapContents = false,
-            BackColor = Color.FromArgb(249, 249, 249),
-            Padding = new Padding(6, 6, 6, 6)
+            BackColor = Color.White,
+            Padding = new Padding(0, 4, 0, 4)
         };
         // Suppress horizontal scrollbar
         contactPanel.HorizontalScroll.Maximum = 0;
@@ -291,28 +291,83 @@ public partial class Form1 : Form
         contactPanel.ResumeLayout();
     }
 
+    private static readonly Color PrimaryLight = Color.FromArgb(237, 237, 255);
+    private static readonly Color Primary = Color.FromArgb(90, 90, 230);
+    private static readonly Color RowBg = Color.White;
+    private static readonly Color RowHover = Color.FromArgb(240, 240, 245);
+    private static readonly Color SepColor = Color.FromArgb(243, 243, 243);
+
+    private static string GetInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+        return name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
     private Panel CreateContactRow(Contact contact)
     {
-        // Use panel width minus padding/scrollbar to avoid horizontal scroll
-        int rowWidth = contactPanel.ClientSize.Width - contactPanel.Padding.Horizontal - 4;
+        int rowWidth = contactPanel.ClientSize.Width - contactPanel.Padding.Horizontal;
         var row = new Panel
         {
             Width = rowWidth,
             Height = ROW_HEIGHT,
-            BackColor = Color.FromArgb(249, 249, 249),
+            BackColor = RowBg,
             Cursor = Cursors.Hand,
             Tag = contact
         };
 
+        // Bottom separator line
+        var sep = new Panel
+        {
+            Height = 1,
+            Dock = DockStyle.Bottom,
+            BackColor = SepColor
+        };
+        row.Controls.Add(sep);
+
+        // Avatar circle with initials
+        var avatar = new Label
+        {
+            Text = GetInitials(contact.Name),
+            Font = new Font("Segoe UI", 8, FontStyle.Bold),
+            ForeColor = Primary,
+            BackColor = PrimaryLight,
+            Size = new Size(32, 32),
+            Location = new Point(16, 6),
+            TextAlign = ContentAlignment.MiddleCenter,
+            Cursor = Cursors.Hand
+        };
+        // Make it circular via Region
+        var gp = new System.Drawing.Drawing2D.GraphicsPath();
+        gp.AddEllipse(0, 0, 32, 32);
+        avatar.Region = new Region(gp);
+        row.Controls.Add(avatar);
+
+        // Name
         var nameLabel = new Label
         {
             Text = contact.Name,
-            Font = new Font("Segoe UI", 10),
+            Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
             ForeColor = Color.FromArgb(30, 30, 30),
-            Location = new Point(8, 12),
+            Location = new Point(58, 12),
             AutoSize = true,
             Cursor = Cursors.Hand
         };
+        row.Controls.Add(nameLabel);
+
+        // Drag grip dots (right side)
+        var grip = new Label
+        {
+            Text = "⠿",
+            Font = new Font("Segoe UI", 10),
+            ForeColor = Color.FromArgb(200, 200, 200),
+            Location = new Point(rowWidth - 28, 12),
+            AutoSize = true,
+            Cursor = Cursors.SizeAll,
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
+        };
+        row.Controls.Add(grip);
 
         var email = contact.Email;
 
@@ -325,35 +380,37 @@ public partial class Form1 : Form
         });
         row.ContextMenuStrip = ctxMenu;
         nameLabel.ContextMenuStrip = ctxMenu;
+        avatar.ContextMenuStrip = ctxMenu;
 
-        // Hover highlight for the entire row
+        // Hover highlight
         void SetHover(Control c, bool enter)
         {
             if (!_isDragging)
-                row.BackColor = enter ? Color.FromArgb(235, 235, 240) : Color.FromArgb(249, 249, 249);
+                row.BackColor = enter ? RowHover : RowBg;
         }
-        row.MouseEnter += (_, _) => SetHover(row, true);
-        row.MouseLeave += (_, _) => SetHover(row, false);
-        nameLabel.MouseEnter += (_, _) => SetHover(row, true);
-        nameLabel.MouseLeave += (_, _) => SetHover(row, false);
+        foreach (Control c in new Control[] { row, nameLabel, avatar, grip })
+        {
+            c.MouseEnter += (_, _) => SetHover(c, true);
+            c.MouseLeave += (_, _) => SetHover(c, false);
+        }
 
-        // Clicking anywhere on the row opens the chat
+        // Click opens chat
         row.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.OpenChat(email); };
         nameLabel.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.OpenChat(email); };
+        avatar.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.OpenChat(email); };
 
         // Drag-and-drop reordering
         void OnMouseDown(object? s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) DragStart(row, e); }
         void OnMouseMove(object? s, MouseEventArgs e) { DragMove(row, e); }
         void OnMouseUp(object? s, MouseEventArgs e) { DragEnd(); }
 
-        row.MouseDown += OnMouseDown;
-        row.MouseMove += OnMouseMove;
-        row.MouseUp += OnMouseUp;
-        nameLabel.MouseDown += OnMouseDown;
-        nameLabel.MouseMove += OnMouseMove;
-        nameLabel.MouseUp += OnMouseUp;
+        foreach (Control c in new Control[] { row, nameLabel, avatar, grip })
+        {
+            c.MouseDown += OnMouseDown;
+            c.MouseMove += OnMouseMove;
+            c.MouseUp += OnMouseUp;
+        }
 
-        row.Controls.Add(nameLabel);
         return row;
     }
 
@@ -373,7 +430,7 @@ public partial class Form1 : Form
             var delta = Math.Abs(Cursor.Position.Y - _dragStartPos.Y);
             if (delta < DRAG_THRESHOLD) return;
             _isDragging = true;
-            _dragRow.BackColor = Color.FromArgb(220, 220, 235);
+            _dragRow.BackColor = Color.FromArgb(237, 237, 255);
             _dragRow.Cursor = Cursors.SizeAll;
         }
 
@@ -399,7 +456,7 @@ public partial class Form1 : Form
     {
         if (_dragRow != null)
         {
-            _dragRow.BackColor = Color.FromArgb(249, 249, 249);
+            _dragRow.BackColor = RowBg;
             _dragRow.Cursor = Cursors.Hand;
         }
 
