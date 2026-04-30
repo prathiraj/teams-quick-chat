@@ -18,6 +18,7 @@ public partial class Form1 : Form
     private static extern void DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int pvAttribute, int cbAttribute);
     private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     private const int DWMWCP_ROUND = 2;
+    private const int DWMWCP_ROUNDSMALL = 3;
 
     // WS_EX_TOOLWINDOW hides from Alt-Tab
     private const int WS_EX_TOOLWINDOW = 0x00000080;
@@ -127,15 +128,18 @@ public partial class Form1 : Form
         {
             int preference = DWMWCP_ROUND;
             DwmSetWindowAttribute(Handle, DWMWA_WINDOW_CORNER_PREFERENCE, ref preference, sizeof(int));
+
+            // Add a subtle border via DWM (DWMWA_BORDER_COLOR = 34)
+            int borderColor = ColorTranslator.ToWin32(Color.FromArgb(229, 231, 235));
+            DwmSetWindowAttribute(Handle, 34, ref borderColor, sizeof(int));
         }
         catch { /* Pre-Win11, ignore */ }
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
+        // No manual border — DWM handles rounded border on Win11
         base.OnPaint(e);
-        using var pen = new Pen(Color.FromArgb(229, 231, 235), 1);
-        e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
     }
 
     protected override void OnDeactivate(EventArgs e)
