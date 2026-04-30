@@ -7,6 +7,7 @@ public partial class Form1 : Form
     private FlowLayoutPanel contactPanel = null!;
     private NotifyIcon trayIcon = null!;
     private bool _allowVisible = false;
+    private bool _firstLaunch = true;
 
     // Drag-and-drop reordering state
     private Panel? _dragRow;
@@ -35,15 +36,25 @@ public partial class Form1 : Form
         SetupTrayIcon();
         BuildUI();
         RefreshContacts();
+
+        // Show a balloon tip so the user knows where to find the app
+        trayIcon.BalloonTipTitle = "Teams Quick Chat";
+        trayIcon.BalloonTipText = "Running in the system tray. Click the icon to open.";
+        trayIcon.BalloonTipIcon = ToolTipIcon.Info;
     }
 
     protected override void SetVisibleCore(bool value)
     {
-        // Suppress the initial show — only allow after first tray click
         if (!_allowVisible)
         {
             _allowVisible = true;
             base.SetVisibleCore(false);
+
+            // Show balloon after form is created
+            BeginInvoke(() =>
+            {
+                trayIcon.ShowBalloonTip(3000);
+            });
             return;
         }
         base.SetVisibleCore(value);
@@ -72,6 +83,8 @@ public partial class Form1 : Form
             if (e.Button == MouseButtons.Left)
                 ToggleFlyout();
         };
+
+        trayIcon.BalloonTipClicked += (_, _) => ToggleFlyout();
 
         // Right-click context menu for exit
         var menu = new ContextMenuStrip();
