@@ -49,15 +49,22 @@ public partial class Form1 : Form
         {
             _allowVisible = true;
             base.SetVisibleCore(false);
-
-            // Show balloon after form is created
-            BeginInvoke(() =>
-            {
-                trayIcon.ShowBalloonTip(3000);
-            });
             return;
         }
         base.SetVisibleCore(value);
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        ApplyRoundedRegion();
+
+        // Show balloon tip once the handle is ready
+        if (_firstLaunch)
+        {
+            _firstLaunch = false;
+            trayIcon.ShowBalloonTip(3000);
+        }
     }
 
     private void SetupTrayIcon()
@@ -163,12 +170,6 @@ public partial class Form1 : Form
         path.AddArc(0, Height - CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS, 90, 90);
         path.CloseFigure();
         Region = new Region(path);
-    }
-
-    protected override void OnHandleCreated(EventArgs e)
-    {
-        base.OnHandleCreated(e);
-        ApplyRoundedRegion();
     }
 
     protected override void OnSizeChanged(EventArgs e)
