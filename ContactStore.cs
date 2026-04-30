@@ -6,11 +6,36 @@ public record Contact(string Name, string Email);
 
 public static class ContactStore
 {
-    private static readonly string DataDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "OneDrive - Microsoft", "TeamsQuickChat");
-
+    private static readonly string DataDir = ResolveDataDir();
     private static readonly string FilePath = Path.Combine(DataDir, "contacts.json");
+
+    private static string ResolveDataDir()
+    {
+        // Check for config override
+        var configPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+        if (File.Exists(configPath))
+        {
+            try
+            {
+                var json = File.ReadAllText(configPath);
+                var config = JsonSerializer.Deserialize<JsonElement>(json);
+                if (config.TryGetProperty("DataDir", out var dirProp))
+                {
+                    var dir = Environment.ExpandEnvironmentVariables(dirProp.GetString() ?? "");
+                    if (!string.IsNullOrWhiteSpace(dir))
+                        return dir;
+                }
+            }
+            catch { /* fall through to default */ }
+        }
+
+        // Default: OneDrive for roaming
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "OneDrive - Microsoft", "TeamsQuickChat");
+    }
+
+    public static string GetDataDir() => DataDir;
 
     public static List<Contact> Load()
     {
