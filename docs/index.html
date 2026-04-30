@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teams Quick Chat — One-click Teams chats from your taskbar</title>
+    <style>
+        :root {
+            --bg: #fafafa;
+            --surface: #ffffff;
+            --primary: #5a5ae6;
+            --primary-light: #ededff;
+            --text: #1a1a2e;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 80px 24px 60px;
+            background: linear-gradient(135deg, #5a5ae6 0%, #7b7bf7 100%);
+            color: white;
+        }
+
+        .hero-icon {
+            width: 72px;
+            height: 72px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 520px;
+            margin: 0 auto 32px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+
+        .btn-primary {
+            background: white;
+            color: var(--primary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+
+        /* Mockup */
+        .mockup-section {
+            text-align: center;
+            padding: 0 24px;
+            margin-top: -30px;
+            margin-bottom: 60px;
+        }
+
+        .mockup {
+            display: inline-block;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+            overflow: hidden;
+            width: 320px;
+            text-align: left;
+        }
+
+        .mockup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mockup-header h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .mockup-add {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: #eee;
+            border: none;
+            font-size: 16px;
+            cursor: default;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mockup-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 1px solid #f3f3f3;
+            transition: background 0.15s;
+        }
+
+        .mockup-row:hover { background: #f0f0f5; }
+        .mockup-row:last-child { border-bottom: none; }
+
+        .mockup-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .mockup-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .mockup-grip {
+            margin-left: auto;
+            color: #ccc;
+            font-size: 14px;
+            cursor: grab;
+        }
+
+        /* Features */
+        .features {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px 60px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+        }
+
+        .feature-icon {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Install */
+        .install {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 24px 60px;
+        }
+
+        .install h2 {
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .install-step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .step-num {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        code {
+            background: #f1f1f1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+        }
+
+        pre {
+            background: #1a1a2e;
+            color: #e0e0e0;
+            padding: 16px 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        /* How it works */
+        .how-it-works {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 24px 60px;
+            text-align: center;
+        }
+
+        .how-it-works h2 {
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+
+        .how-it-works p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 16px;
+        }
+
+        .deep-link-demo {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            display: inline-block;
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: var(--primary);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 32px 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        footer a { color: var(--primary); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-icon">💬</div>
+    <h1>Teams Quick Chat</h1>
+    <p>One-click Teams chats with your favourite people, right from the system tray.</p>
+    <div class="hero-buttons">
+        <a href="https://github.com/pchakka_microsoft/teams-quick-chat" class="btn btn-primary">
+            ⬇ View on GitHub
+        </a>
+        <a href="https://github.com/pchakka_microsoft/teams-quick-chat#installation" class="btn btn-outline">
+            📖 Installation
+        </a>
+    </div>
+</section>
+
+<!-- App Mockup -->
+<section class="mockup-section">
+    <div class="mockup">
+        <div class="mockup-header">
+            <h3>Teams Quick Chat</h3>
+            <div class="mockup-add">+</div>
+        </div>
+        <div class="mockup-row">
+            <div class="mockup-avatar">DM</div>
+            <span class="mockup-name">Divyesh Makwana</span>
+            <span class="mockup-grip">⠿</span>
+        </div>
+        <div class="mockup-row">
+            <div class="mockup-avatar">SY</div>
+            <span class="mockup-name">Steven Yang</span>
+            <span class="mockup-grip">⠿</span>
+        </div>
+        <div class="mockup-row">
+            <div class="mockup-avatar">SR</div>
+            <span class="mockup-name">Shantanu Roy</span>
+            <span class="mockup-grip">⠿</span>
+        </div>
+        <div class="mockup-row">
+            <div class="mockup-avatar">RK</div>
+            <span class="mockup-name">Rahul Kumar</span>
+            <span class="mockup-grip">⠿</span>
+        </div>
+        <div class="mockup-row">
+            <div class="mockup-avatar">RA</div>
+            <span class="mockup-name">Rishi Ahuja</span>
+            <span class="mockup-grip">⠿</span>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+    <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <h3>System Tray Icon</h3>
+        <p>Lives in your notification area. Always one click away, never clutters Alt-Tab.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Instant Deep Link</h3>
+        <p>Opens Teams desktop directly via <code>msteams:</code> protocol. No browser roundtrip.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🔀</div>
+        <h3>Drag &amp; Drop Reorder</h3>
+        <p>Arrange contacts in the order you want. New order is saved automatically.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">☁️</div>
+        <h3>OneDrive Roaming</h3>
+        <p>Contacts stored in OneDrive — sync across all your devices automatically.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">📐</div>
+        <h3>Auto-sizing Flyout</h3>
+        <p>Window height adapts to the number of contacts. No wasted space.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">🪶</div>
+        <h3>Lightweight</h3>
+        <p>Single 200KB exe. Built with C# WinForms on .NET 9. Minimal resource usage.</p>
+    </div>
+</section>
+
+<!-- How it works -->
+<section class="how-it-works">
+    <h2>How it works</h2>
+    <p>Click a contact name and Teams opens straight to the 1:1 chat — powered by the Microsoft Teams deep link protocol:</p>
+    <div class="deep-link-demo">
+        msteams:/l/chat/0/0?users=alice@contoso.com
+    </div>
+</section>
+
+<!-- Install -->
+<section class="install">
+    <h2>Get Started</h2>
+
+    <div class="install-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+            <h3>Clone the repo</h3>
+            <pre><code>git clone https://github.com/pchakka_microsoft/teams-quick-chat.git
+cd teams-quick-chat</code></pre>
+        </div>
+    </div>
+
+    <div class="install-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+            <h3>Build &amp; publish</h3>
+            <pre><code>dotnet publish -c Release</code></pre>
+            <p style="margin-top: 8px">Output: <code>bin\Release\net9.0-windows\win-x64\publish\TeamsQuickChat.exe</code></p>
+        </div>
+    </div>
+
+    <div class="install-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+            <h3>Run &amp; pin</h3>
+            <p>Run the exe. Find the chat-bubble icon in your system tray. Drag it onto the taskbar to pin it.</p>
+        </div>
+    </div>
+
+    <div class="install-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+            <h3>Auto-start (optional)</h3>
+            <p>Press <code>Win+R</code> → <code>shell:startup</code> → drop a shortcut to the exe there.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    Built by <a href="https://github.com/pchakka_microsoft">pchakka_microsoft</a> ·
+    <a href="https://github.com/pchakka_microsoft/teams-quick-chat">GitHub</a> ·
+    MIT License
+</footer>
+
+</body>
+</html>
