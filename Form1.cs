@@ -210,14 +210,15 @@ public partial class Form1 : Form
             FlatStyle = FlatStyle.Flat,
             BackColor = Color.FromArgb(230, 230, 230),
             ForeColor = Color.FromArgb(30, 30, 30),
-            Location = new Point(220, 6),
             Size = new Size(32, 32),
             Cursor = Cursors.Hand,
             TextAlign = ContentAlignment.MiddleCenter,
             Padding = Padding.Empty,
             Margin = Padding.Empty,
-            UseCompatibleTextRendering = true
+            UseCompatibleTextRendering = true,
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
+        addBtn.Location = new Point(header.ClientSize.Width - addBtn.Width - 12, 6);
         addBtn.FlatAppearance.BorderColor = Color.FromArgb(200, 200, 200);
         addBtn.Click += (_, _) =>
         {
