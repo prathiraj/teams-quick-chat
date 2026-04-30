@@ -315,27 +315,15 @@ public partial class Form1 : Form
 
         var email = contact.Email;
 
-        var removeBtn = new Button
-        {
-            Text = "x",
-            Font = new Font("Segoe UI", 10),
-            FlatStyle = FlatStyle.Flat,
-            ForeColor = Color.FromArgb(180, 60, 60),
-            BackColor = Color.FromArgb(249, 249, 249),
-            Size = new Size(32, 32),
-            Location = new Point(rowWidth - 38, 6),
-            Cursor = Cursors.Hand,
-            TextAlign = ContentAlignment.MiddleCenter,
-            Padding = Padding.Empty,
-            Margin = Padding.Empty,
-            UseCompatibleTextRendering = true
-        };
-        removeBtn.FlatAppearance.BorderSize = 0;
-        removeBtn.Click += (_, _) =>
+        // Right-click context menu for remove
+        var ctxMenu = new ContextMenuStrip();
+        ctxMenu.Items.Add("Remove", null, (_, _) =>
         {
             ContactStore.Remove(email);
             RefreshContacts();
-        };
+        });
+        row.ContextMenuStrip = ctxMenu;
+        nameLabel.ContextMenuStrip = ctxMenu;
 
         // Hover highlight for the entire row
         void SetHover(Control c, bool enter)
@@ -364,7 +352,7 @@ public partial class Form1 : Form
         nameLabel.MouseMove += OnMouseMove;
         nameLabel.MouseUp += OnMouseUp;
 
-        row.Controls.AddRange([nameLabel, removeBtn]);
+        row.Controls.Add(nameLabel);
         return row;
     }
 
