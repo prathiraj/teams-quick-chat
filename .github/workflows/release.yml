@@ -1,72 +1,73 @@
-name: Release
+name: Build, Release & Deploy Pages
 
 on:
   push:
-    tags:
-      - "v*.*.*"
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Release version (e.g. 1.0.0)"
-        required: true
-        type: string
+    branches: [master]
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  build-and-release:
+    runs-on: windows-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          dotnet-version: '9.0.x'
 
-      - name: Determine version
+      - name: Get version from csproj
         id: version
+        shell: pwsh
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VER="${{ inputs.version }}"
-          else
-            VER=$(echo "${{ github.ref_name }}" | sed 's/^v//')
-          fi
-          echo "VERSION=$VER" >> "$GITHUB_OUTPUT"
-          echo "TAG=v$VER" >> "$GITHUB_OUTPUT"
+          [xml]$csproj = Get-Content TeamsQuickChat.csproj
+          $version = $csproj.Project.PropertyGroup.Version
+          echo "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Publish
-        run: dotnet publish -c Release -r win-x64 -p:SelfContained=true -p:EnableWindowsTargeting=true -p:Version=${{ steps.version.outputs.VERSION }} -o publish
+        run: dotnet publish -c Release
 
-      - name: Create zip
-        run: |
-          cd publish && zip -r "../TeamsQuickChat-${{ steps.version.outputs.VERSION }}-win-x64.zip" .
+      - name: Create or update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body: |
+            Automated release for v${{ steps.version.outputs.version }}.
 
-      - name: Install Inno Setup
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq innoextract wine64 > /dev/null 2>&1
-          mkdir -p /tmp/inno
-          curl -sL "https://files.jrsoftware.org/is/6/innosetup-6.4.3.exe" -o /tmp/inno/is-setup.exe
-
-      - name: Build installer
-        run: |
-          cd ${{ github.workspace }}
-          wine /tmp/inno/is-setup.exe /VERYSILENT /SUPPRESSMSGBOXES /DIR="C:\\InnoSetup" 2>/dev/null || true
-          wine "C:\\InnoSetup\\ISCC.exe" "/DAppVersion=${{ steps.version.outputs.VERSION }}" installer/TeamsQuickChat.iss 2>/dev/null || echo "::warning::Inno Setup build failed on Linux runner; installer not included"
-
-      - name: Create GitHub Release
+            ### Install
+            1. Download `TeamsQuickChat.exe` and `icon.ico` — place them in the same folder
+            2. Run `TeamsQuickChat.exe`
+            3. Find the chat-bubble icon in your system tray
+            4. Requires [.NET 9 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)
+          files: |
+            bin/Release/net9.0-windows/win-x64/publish/TeamsQuickChat.exe
+            bin/Release/net9.0-windows/win-x64/publish/icon.ico
+          make_latest: true
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          ASSETS="TeamsQuickChat-${{ steps.version.outputs.VERSION }}-win-x64.zip"
-          INSTALLER="installer/Output/TeamsQuickChatSetup-${{ steps.version.outputs.VERSION }}.exe"
-          if [ -f "$INSTALLER" ]; then
-            ASSETS="$ASSETS $INSTALLER"
-          fi
-          gh release create "${{ steps.version.outputs.TAG }}" \
-            $ASSETS \
-            --title "TeamsQuickChat ${{ steps.version.outputs.TAG }}" \
-            --generate-notes
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-pages:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
