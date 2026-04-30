@@ -109,7 +109,6 @@ public partial class Form1 : Form
         }
         else
         {
-            WindowState = FormWindowState.Normal;
             ResizeToFitContacts();
             RefreshContacts();
             PositionAboveTaskbar();

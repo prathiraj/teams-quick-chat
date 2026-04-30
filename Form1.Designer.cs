@@ -32,7 +32,6 @@ partial class Form1
         this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
         this.ClientSize = new System.Drawing.Size(320, 400);
         this.Text = "Teams Quick Chat";
-        this.WindowState = System.Windows.Forms.FormWindowState.Minimized;
         this.ShowInTaskbar = false;
     }
 
