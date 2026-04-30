@@ -7,6 +7,12 @@ public partial class Form1 : Form
     private FlowLayoutPanel contactPanel = null!;
     private NotifyIcon trayIcon = null!;
 
+    // Drag-and-drop reordering state
+    private Panel? _dragRow;
+    private Point _dragStartPos;
+    private bool _isDragging;
+    private const int DRAG_THRESHOLD = 5;
+
     // Win11 rounded corners
     [DllImport("dwmapi.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
     private static extern void DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int pvAttribute, int cbAttribute);
@@ -293,7 +299,8 @@ public partial class Form1 : Form
             Width = rowWidth,
             Height = ROW_HEIGHT,
             BackColor = Color.FromArgb(249, 249, 249),
-            Cursor = Cursors.Hand
+            Cursor = Cursors.Hand,
+            Tag = contact
         };
 
         var nameLabel = new Label
@@ -333,7 +340,8 @@ public partial class Form1 : Form
         // Hover highlight for the entire row
         void SetHover(Control c, bool enter)
         {
-            row.BackColor = enter ? Color.FromArgb(235, 235, 240) : Color.FromArgb(249, 249, 249);
+            if (!_isDragging)
+                row.BackColor = enter ? Color.FromArgb(235, 235, 240) : Color.FromArgb(249, 249, 249);
         }
         row.MouseEnter += (_, _) => SetHover(row, true);
         row.MouseLeave += (_, _) => SetHover(row, false);
@@ -341,10 +349,85 @@ public partial class Form1 : Form
         nameLabel.MouseLeave += (_, _) => SetHover(row, false);
 
         // Clicking anywhere on the row opens the chat
-        row.Click += (_, _) => TeamsDeepLink.OpenChat(email);
-        nameLabel.Click += (_, _) => TeamsDeepLink.OpenChat(email);
+        row.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.OpenChat(email); };
+        nameLabel.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.OpenChat(email); };
+
+        // Drag-and-drop reordering
+        void OnMouseDown(object? s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) DragStart(row, e); }
+        void OnMouseMove(object? s, MouseEventArgs e) { DragMove(row, e); }
+        void OnMouseUp(object? s, MouseEventArgs e) { DragEnd(); }
+
+        row.MouseDown += OnMouseDown;
+        row.MouseMove += OnMouseMove;
+        row.MouseUp += OnMouseUp;
+        nameLabel.MouseDown += OnMouseDown;
+        nameLabel.MouseMove += OnMouseMove;
+        nameLabel.MouseUp += OnMouseUp;
 
         row.Controls.AddRange([nameLabel, removeBtn]);
         return row;
+    }
+
+    private void DragStart(Panel row, MouseEventArgs e)
+    {
+        _dragRow = row;
+        _dragStartPos = Cursor.Position;
+        _isDragging = false;
+    }
+
+    private void DragMove(Panel row, MouseEventArgs e)
+    {
+        if (_dragRow == null) return;
+
+        if (!_isDragging)
+        {
+            var delta = Math.Abs(Cursor.Position.Y - _dragStartPos.Y);
+            if (delta < DRAG_THRESHOLD) return;
+            _isDragging = true;
+            _dragRow.BackColor = Color.FromArgb(220, 220, 235);
+            _dragRow.Cursor = Cursors.SizeAll;
+        }
+
+        // Find which row the cursor is over and swap
+        var pt = contactPanel.PointToClient(Cursor.Position);
+        foreach (Control ctrl in contactPanel.Controls)
+        {
+            if (ctrl == _dragRow || ctrl is not Panel target) continue;
+            if (target.Bounds.Contains(pt))
+            {
+                int dragIdx = contactPanel.Controls.GetChildIndex(_dragRow);
+                int targetIdx = contactPanel.Controls.GetChildIndex(target);
+                if (dragIdx != targetIdx)
+                {
+                    contactPanel.Controls.SetChildIndex(_dragRow, targetIdx);
+                }
+                break;
+            }
+        }
+    }
+
+    private void DragEnd()
+    {
+        if (_dragRow != null)
+        {
+            _dragRow.BackColor = Color.FromArgb(249, 249, 249);
+            _dragRow.Cursor = Cursors.Hand;
+        }
+
+        if (_isDragging)
+        {
+            // Persist the new order
+            var reordered = new List<Contact>();
+            foreach (Control ctrl in contactPanel.Controls)
+            {
+                if (ctrl is Panel row && row.Tag is Contact c)
+                    reordered.Add(c);
+            }
+            if (reordered.Count > 0)
+                ContactStore.Save(reordered);
+        }
+
+        _dragRow = null;
+        _isDragging = false;
     }
 }
