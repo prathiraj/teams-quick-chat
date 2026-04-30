@@ -327,14 +327,17 @@ public partial class Form1 : Form
 
     private Panel CreateContactRow(Contact contact)
     {
-        int rowWidth = contactPanel.ClientSize.Width - contactPanel.Padding.Horizontal;
+        // Subtract scrollbar width and panel padding to prevent horizontal overflow
+        int scrollBarWidth = SystemInformation.VerticalScrollBarWidth;
+        int rowWidth = contactPanel.ClientSize.Width - contactPanel.Padding.Horizontal - scrollBarWidth - 2;
         var row = new Panel
         {
             Width = rowWidth,
             Height = ROW_HEIGHT,
             BackColor = RowBg,
             Cursor = Cursors.Hand,
-            Tag = contact
+            Tag = contact,
+            Margin = new Padding(0)
         };
 
         // Bottom separator line

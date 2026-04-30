@@ -1,8 +1,7 @@
 namespace TeamsQuickChat;
 
 /// <summary>
-/// FlowLayoutPanel that completely suppresses the horizontal scrollbar
-/// by intercepting WM_NCCALCSIZE and removing WS_HSCROLL.
+/// FlowLayoutPanel that completely suppresses horizontal scrolling.
 /// </summary>
 public class NoHScrollFlowPanel : FlowLayoutPanel
 {
@@ -25,5 +24,21 @@ public class NoHScrollFlowPanel : FlowLayoutPanel
                 SetWindowLong(Handle, GWL_STYLE, style & ~WS_HSCROLL);
         }
         base.WndProc(ref m);
+
+        // Always reset horizontal scroll position to 0
+        if (HorizontalScroll.Value != 0)
+        {
+            HorizontalScroll.Value = 0;
+            PerformLayout();
+        }
+    }
+
+    protected override void OnScroll(ScrollEventArgs se)
+    {
+        if (se.ScrollOrientation == ScrollOrientation.HorizontalScroll)
+        {
+            se = new ScrollEventArgs(se.Type, 0, 0, ScrollOrientation.HorizontalScroll);
+        }
+        base.OnScroll(se);
     }
 }
