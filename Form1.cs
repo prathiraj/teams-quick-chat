@@ -93,9 +93,14 @@ public partial class Form1 : Form
 
         trayIcon.BalloonTipClicked += (_, _) => ToggleFlyout();
 
-        // Right-click context menu for exit
+        // Right-click context menu
         var menu = new ContextMenuStrip();
         menu.Items.Add("Check for updates", null, async (_, _) => await UpdateChecker.PromptAndUpdateAsync(showUpToDate: true));
+        menu.Items.Add("Settings", null, (_, _) =>
+        {
+            using var dlg = new SettingsDialog();
+            dlg.ShowDialog();
+        });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => { trayIcon.Visible = false; Application.Exit(); });
         trayIcon.ContextMenuStrip = menu;
@@ -350,10 +355,11 @@ public partial class Form1 : Form
         // Subtract scrollbar width and panel padding to prevent horizontal overflow
         int scrollBarWidth = SystemInformation.VerticalScrollBarWidth;
         int rowWidth = contactPanel.ClientSize.Width - contactPanel.Padding.Horizontal - scrollBarWidth - 2;
+        int rowHeight = 44;
         var row = new Panel
         {
             Width = rowWidth,
-            Height = 44,
+            Height = rowHeight,
             BackColor = RowBg,
             Cursor = Cursors.Hand,
             Tag = contact,
@@ -370,46 +376,48 @@ public partial class Form1 : Form
         row.Controls.Add(sep);
 
         // Avatar circle with initials
+        int avatarSize = 30;
+        int avatarY = (rowHeight - avatarSize) / 2;
         var avatar = new Label
         {
             Text = GetInitials(contact.Name),
-            Font = new Font("Segoe UI", 8, FontStyle.Bold),
+            Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
             ForeColor = Primary,
             BackColor = PrimaryLight,
-            Size = new Size(32, 32),
-            Location = new Point(16, 6),
+            Size = new Size(avatarSize, avatarSize),
+            Location = new Point(12, avatarY),
             TextAlign = ContentAlignment.MiddleCenter,
             Cursor = Cursors.Hand
         };
         // Make it circular via Region
         var gp = new System.Drawing.Drawing2D.GraphicsPath();
-        gp.AddEllipse(0, 0, 32, 32);
+        gp.AddEllipse(0, 0, avatarSize, avatarSize);
         avatar.Region = new Region(gp);
         row.Controls.Add(avatar);
 
-        // Name
+        // Name — vertically centered
         var nameLabel = new Label
         {
             Text = contact.Name,
             Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
             ForeColor = Color.FromArgb(30, 30, 30),
-            Location = new Point(58, 12),
+            Location = new Point(50, (rowHeight - 20) / 2),
             AutoSize = true,
             Cursor = Cursors.Hand
         };
         row.Controls.Add(nameLabel);
 
-        // Drag grip dots (right side)
+        // Drag grip dots — aligned with + button (16px from right edge)
         var grip = new Label
         {
             Text = "⠿",
-            Font = new Font("Segoe UI", 10),
+            Font = new Font("Segoe UI", 9),
             ForeColor = Color.FromArgb(200, 200, 200),
-            Location = new Point(rowWidth - 28, 12),
             AutoSize = true,
             Cursor = Cursors.SizeAll,
             Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
+        grip.Location = new Point(rowWidth - grip.PreferredWidth - 16, (rowHeight - 18) / 2);
         row.Controls.Add(grip);
 
         var email = contact.Email;
