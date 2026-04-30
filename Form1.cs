@@ -13,17 +13,12 @@ public partial class Form1 : Form
     private bool _isDragging;
     private const int DRAG_THRESHOLD = 5;
 
-    // Win11 rounded corners
+    // Win11 rounded corners (fallback, may not work on all borderless windows)
     [DllImport("dwmapi.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
     private static extern void DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int pvAttribute, int cbAttribute);
-    private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
-    private const int DWMWCP_ROUND = 2;
-    private const int DWMWCP_ROUNDSMALL = 3;
 
     // WS_EX_TOOLWINDOW hides from Alt-Tab
     private const int WS_EX_TOOLWINDOW = 0x00000080;
-    // WS_THICKFRAME gives DWM a frame to apply rounded corners to
-    private const int WS_THICKFRAME = 0x00040000;
 
     public Form1()
     {
@@ -119,12 +114,11 @@ public partial class Form1 : Form
             var cp = base.CreateParams;
             cp.ClassStyle |= 0x00020000; // CS_DROPSHADOW
             cp.ExStyle |= WS_EX_TOOLWINDOW;
-            cp.Style |= WS_THICKFRAME; // Needed for DWM rounded corners
             return cp;
         }
     }
 
-    // Prevent resizing even though WS_THICKFRAME is set
+    // Prevent resizing
     private const int WM_NCHITTEST = 0x84;
     private const int HTCLIENT = 1;
     protected override void WndProc(ref Message m)
@@ -132,31 +126,39 @@ public partial class Form1 : Form
         base.WndProc(ref m);
         if (m.Msg == WM_NCHITTEST)
         {
-            // Override all non-client hit test results to HTCLIENT
-            // so the resize handles don't work
             if (m.Result != IntPtr.Zero)
                 m.Result = (IntPtr)HTCLIENT;
         }
     }
 
+    private const int CORNER_RADIUS = 12;
+
+    private void ApplyRoundedRegion()
+    {
+        var path = new System.Drawing.Drawing2D.GraphicsPath();
+        path.AddArc(0, 0, CORNER_RADIUS, CORNER_RADIUS, 180, 90);
+        path.AddArc(Width - CORNER_RADIUS, 0, CORNER_RADIUS, CORNER_RADIUS, 270, 90);
+        path.AddArc(Width - CORNER_RADIUS, Height - CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS, 0, 90);
+        path.AddArc(0, Height - CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS, 90, 90);
+        path.CloseFigure();
+        Region = new Region(path);
+    }
+
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        try
-        {
-            int preference = DWMWCP_ROUND;
-            DwmSetWindowAttribute(Handle, DWMWA_WINDOW_CORNER_PREFERENCE, ref preference, sizeof(int));
+        ApplyRoundedRegion();
+    }
 
-            // Add a subtle border via DWM (DWMWA_BORDER_COLOR = 34)
-            int borderColor = ColorTranslator.ToWin32(Color.FromArgb(229, 231, 235));
-            DwmSetWindowAttribute(Handle, 34, ref borderColor, sizeof(int));
-        }
-        catch { /* Pre-Win11, ignore */ }
+    protected override void OnSizeChanged(EventArgs e)
+    {
+        base.OnSizeChanged(e);
+        if (IsHandleCreated)
+            ApplyRoundedRegion();
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        // No manual border — DWM handles rounded border on Win11
         base.OnPaint(e);
     }
 
@@ -262,8 +264,8 @@ public partial class Form1 : Form
         Controls.Add(sep);
         sep.BringToFront();
 
-        // Scrollable contact list
-        contactPanel = new FlowLayoutPanel
+        // Scrollable contact list — no horizontal scrollbar
+        contactPanel = new NoHScrollFlowPanel
         {
             Dock = DockStyle.Fill,
             AutoScroll = true,
@@ -272,10 +274,6 @@ public partial class Form1 : Form
             BackColor = Color.White,
             Padding = new Padding(0, 4, 0, 4)
         };
-        // Suppress horizontal scrollbar
-        contactPanel.HorizontalScroll.Maximum = 0;
-        contactPanel.AutoScrollMargin = new Size(0, 0);
-        contactPanel.HorizontalScroll.Visible = false;
         Controls.Add(contactPanel);
         contactPanel.BringToFront();
     }
