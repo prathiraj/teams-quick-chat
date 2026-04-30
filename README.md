@@ -41,7 +41,7 @@ Download `TeamsQuickChat-x.x.x-win-x64.zip` from the [Releases](../../releases) 
 ### Option 3: Build from source
 
 ```powershell
-git clone https://github.com/pchakka_microsoft/teams-quick-chat.git
+git clone https://github.com/prathiraj/teams-quick-chat.git
 cd teams-quick-chat
 dotnet publish -c Release
 ```

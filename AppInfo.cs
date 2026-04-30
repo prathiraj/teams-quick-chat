@@ -7,7 +7,7 @@ public static class AppInfo
     public static readonly string Version =
         Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
 
-    public const string RepoOwner = "pchakka_microsoft";
+    public const string RepoOwner = "prathiraj";
     public const string RepoName = "teams-quick-chat";
 
     public static readonly string ReleasesApiUrl =
