@@ -90,7 +90,6 @@ public partial class Form1 : Form
     }
 
     private const int ROW_HEIGHT = 44;
-    private const int ROW_MARGIN = 6;     // WinForms default top+bottom margin per control
     private const int HEADER_HEIGHT = 49; // 48px header + 1px separator
     private const int MIN_HEIGHT = 120;
     private const int MAX_CONTACTS_VISIBLE = 15;
@@ -98,9 +97,9 @@ public partial class Form1 : Form
     private void ResizeToFitContacts()
     {
         var count = ContactStore.Load().Count;
-        // Header + form padding (2) + panel padding (8) + rows + extra buffer
+        // Header + panel padding (top 4 + bottom 4) + rows (no margin since Margin=0)
         int contentHeight = count > 0
-            ? HEADER_HEIGHT + 2 + 8 + ((ROW_HEIGHT + ROW_MARGIN) * Math.Min(count, MAX_CONTACTS_VISIBLE)) + 10
+            ? HEADER_HEIGHT + 8 + (ROW_HEIGHT * Math.Min(count, MAX_CONTACTS_VISIBLE))
             : MIN_HEIGHT;
 
         var workArea = Screen.FromPoint(Cursor.Position).WorkingArea;
