@@ -59,11 +59,11 @@ public partial class Form1 : Form
         base.OnHandleCreated(e);
         ApplyRoundedRegion();
 
-        // Show balloon tip once the handle is ready
+        // Show the flyout on first launch so the user sees something
         if (_firstLaunch)
         {
             _firstLaunch = false;
-            trayIcon.ShowBalloonTip(3000);
+            BeginInvoke(() => ToggleFlyout());
         }
     }
 
