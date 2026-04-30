@@ -352,7 +352,6 @@ public partial class Form1 : Form
 
     private Panel CreateContactRow(Contact contact)
     {
-        // Subtract scrollbar width and panel padding to prevent horizontal overflow
         int scrollBarWidth = SystemInformation.VerticalScrollBarWidth;
         int rowWidth = contactPanel.ClientSize.Width - contactPanel.Padding.Horizontal - scrollBarWidth - 2;
         int rowHeight = 44;
@@ -375,39 +374,40 @@ public partial class Form1 : Form
         };
         row.Controls.Add(sep);
 
-        // Avatar circle with initials
-        int avatarSize = 30;
-        int avatarY = (rowHeight - avatarSize) / 2;
-        var avatar = new Label
+        // Owner-drawn avatar — paint a filled circle with initials
+        var initials = GetInitials(contact.Name);
+        var avatar = new Control
         {
-            Text = GetInitials(contact.Name),
-            Font = new Font("Segoe UI", 7.5f, FontStyle.Bold),
-            ForeColor = Primary,
-            BackColor = PrimaryLight,
-            Size = new Size(avatarSize, avatarSize),
-            Location = new Point(12, avatarY),
-            TextAlign = ContentAlignment.MiddleCenter,
+            Size = new Size(30, 30),
             Cursor = Cursors.Hand
         };
-        // Make it circular via Region
-        var gp = new System.Drawing.Drawing2D.GraphicsPath();
-        gp.AddEllipse(0, 0, avatarSize, avatarSize);
-        avatar.Region = new Region(gp);
+        avatar.Paint += (_, e) =>
+        {
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            using var brush = new SolidBrush(PrimaryLight);
+            e.Graphics.FillEllipse(brush, 0, 0, avatar.Width - 1, avatar.Height - 1);
+            using var font = new Font("Segoe UI", 7.5f, FontStyle.Bold);
+            using var textBrush = new SolidBrush(Primary);
+            var textSize = e.Graphics.MeasureString(initials, font);
+            float tx = (avatar.Width - textSize.Width) / 2f;
+            float ty = (avatar.Height - textSize.Height) / 2f;
+            e.Graphics.DrawString(initials, font, textBrush, tx, ty);
+        };
         row.Controls.Add(avatar);
 
-        // Name — vertically centered
+        // Name
         var nameLabel = new Label
         {
             Text = contact.Name,
             Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
             ForeColor = Color.FromArgb(30, 30, 30),
-            Location = new Point(50, (rowHeight - 20) / 2),
             AutoSize = true,
             Cursor = Cursors.Hand
         };
         row.Controls.Add(nameLabel);
 
-        // Drag grip dots — aligned with + button (16px from right edge)
+        // Drag grip dots
         var grip = new Label
         {
             Text = "⠿",
@@ -417,8 +417,17 @@ public partial class Form1 : Form
             Cursor = Cursors.SizeAll,
             Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
-        grip.Location = new Point(rowWidth - grip.PreferredWidth - 16, (rowHeight - 18) / 2);
         row.Controls.Add(grip);
+
+        // Position everything on layout (DPI-safe)
+        row.Layout += (_, _) =>
+        {
+            int h = row.ClientSize.Height;
+            int w = row.ClientSize.Width;
+            avatar.Location = new Point(12, (h - avatar.Height) / 2);
+            nameLabel.Location = new Point(avatar.Right + 10, (h - nameLabel.Height) / 2);
+            grip.Location = new Point(w - grip.Width - 16, (h - grip.Height) / 2);
+        };
 
         var email = contact.Email;
 
