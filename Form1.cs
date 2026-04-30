@@ -118,22 +118,32 @@ public partial class Form1 : Form
         }
     }
 
-    private const int ROW_HEIGHT = 44;
-    private const int HEADER_HEIGHT = 49; // 48px header + 1px separator
-    private const int MIN_HEIGHT = 120;
+    private const int ROW_HEIGHT_96DPI = 44;
+    private const int HEADER_HEIGHT_96DPI = 49;
+    private const int MIN_HEIGHT_96DPI = 120;
     private const int MAX_CONTACTS_VISIBLE = 15;
+
+    private int ScaleToDpi(int value96dpi)
+    {
+        using var g = CreateGraphics();
+        return (int)(value96dpi * g.DpiY / 96f);
+    }
 
     private void ResizeToFitContacts()
     {
+        int rowHeight = ScaleToDpi(ROW_HEIGHT_96DPI);
+        int headerHeight = ScaleToDpi(HEADER_HEIGHT_96DPI);
+        int minHeight = ScaleToDpi(MIN_HEIGHT_96DPI);
+        int panelPad = ScaleToDpi(8);
+
         var count = ContactStore.Load().Count;
-        // Header + panel padding (top 4 + bottom 4) + rows (no margin since Margin=0)
         int contentHeight = count > 0
-            ? HEADER_HEIGHT + 8 + (ROW_HEIGHT * Math.Min(count, MAX_CONTACTS_VISIBLE))
-            : MIN_HEIGHT;
+            ? headerHeight + panelPad + (rowHeight * Math.Min(count, MAX_CONTACTS_VISIBLE))
+            : minHeight;
 
         var workArea = Screen.FromPoint(Cursor.Position).WorkingArea;
         int maxHeight = workArea.Height - 40;
-        ClientSize = new Size(ClientSize.Width, Math.Min(Math.Max(contentHeight, MIN_HEIGHT), maxHeight));
+        ClientSize = new Size(ClientSize.Width, Math.Min(Math.Max(contentHeight, minHeight), maxHeight));
     }
     protected override CreateParams CreateParams
     {
@@ -355,7 +365,7 @@ public partial class Form1 : Form
         var row = new Panel
         {
             Width = rowWidth,
-            Height = ROW_HEIGHT,
+            Height = ScaleToDpi(ROW_HEIGHT_96DPI),
             BackColor = RowBg,
             Cursor = Cursors.Hand,
             Tag = contact,
