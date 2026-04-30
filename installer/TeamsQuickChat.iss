@@ -9,8 +9,8 @@
 AppId={{E7A3B2C1-4D5F-6E7A-8B9C-0D1E2F3A4B5C}
 AppName=TeamsQuickChat
 AppVersion={#AppVersion}
-AppPublisher=Prathiraj Chakka
-AppPublisherURL=https://github.com/pchakka_microsoft/teams-quick-chat
+AppPublisher=prathiraj
+AppPublisherURL=https://github.com/prathiraj/teams-quick-chat
 DefaultDirName={localappdata}\TeamsQuickChat
 DefaultGroupName=TeamsQuickChat
 PrivilegesRequired=lowest
@@ -32,11 +32,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "autostart"; Description: "Start TeamsQuickChat when I sign in to Windows"; Flags: checkedonce
 
 [Files]
-Source: "..\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\bin\Release\net9.0-windows\win-x64\publish\TeamsQuickChat.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\bin\Release\net9.0-windows\win-x64\publish\icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\TeamsQuickChat"; Filename: "{app}\TeamsQuickChat.exe"
-Name: "{userstartup}\TeamsQuickChat"; Filename: "{app}\TeamsQuickChat.exe"; Tasks: autostart
+Name: "{group}\TeamsQuickChat"; Filename: "{app}\TeamsQuickChat.exe"; IconFilename: "{app}\icon.ico"
+Name: "{userstartup}\TeamsQuickChat"; Filename: "{app}\TeamsQuickChat.exe"; IconFilename: "{app}\icon.ico"; Tasks: autostart
 
 [Run]
 Filename: "{app}\TeamsQuickChat.exe"; Description: "Launch TeamsQuickChat"; Flags: nowait postinstall skipifsilent

@@ -36,23 +36,34 @@ jobs:
         run: |
           Copy-Item icon.ico bin/Release/net9.0-windows/win-x64/publish/icon.ico -Force
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress | Out-Null
+          Write-Output "Inno Setup installed"
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=${{ steps.version.outputs.version }} installer\TeamsQuickChat.iss
+
       - name: Create or update release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
           body: |
-            Automated release for v${{ steps.version.outputs.version }}.
+            ### Install (recommended)
+            Download and run **`TeamsQuickChatSetup-${{ steps.version.outputs.version }}.exe`** — installs the app with optional auto-start on login.
 
-            ### Install
-            1. Download `TeamsQuickChat.exe` and `icon.ico` — place them in the same folder
-            2. Run `TeamsQuickChat.exe`
-            3. Find the chat-bubble icon in your system tray
+            ### Portable
+            Or download `TeamsQuickChat.exe` + `icon.ico` and run directly. No installation needed.
 
-            No prerequisites — the exe is fully self-contained.
+            No prerequisites — fully self-contained.
           files: |
             bin/Release/net9.0-windows/win-x64/publish/TeamsQuickChat.exe
             bin/Release/net9.0-windows/win-x64/publish/icon.ico
+            installer/Output/TeamsQuickChatSetup-${{ steps.version.outputs.version }}.exe
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
