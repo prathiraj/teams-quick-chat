@@ -22,6 +22,8 @@ public partial class Form1 : Form
 
     // WS_EX_TOOLWINDOW hides from Alt-Tab
     private const int WS_EX_TOOLWINDOW = 0x00000080;
+    // WS_THICKFRAME gives DWM a frame to apply rounded corners to
+    private const int WS_THICKFRAME = 0x00040000;
 
     public Form1()
     {
@@ -31,7 +33,7 @@ public partial class Form1 : Form
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.Manual;
         BackColor = Color.White;
-        Padding = new Padding(1);
+        Padding = Padding.Empty;
         ClientSize = new Size(320, 400);
 
         SetupTrayIcon();
@@ -94,16 +96,16 @@ public partial class Form1 : Form
 
     private const int ROW_HEIGHT = 44;
     private const int ROW_MARGIN = 6;     // WinForms default top+bottom margin per control
-    private const int HEADER_HEIGHT = 45; // header + separator
+    private const int HEADER_HEIGHT = 49; // 48px header + 1px separator
     private const int MIN_HEIGHT = 120;
     private const int MAX_CONTACTS_VISIBLE = 15;
 
     private void ResizeToFitContacts()
     {
         var count = ContactStore.Load().Count;
-        // Account for: header, panel padding (12), form padding (2), row margins
+        // Header + form padding (2) + panel padding (8) + rows + extra buffer
         int contentHeight = count > 0
-            ? HEADER_HEIGHT + 14 + ((ROW_HEIGHT + ROW_MARGIN) * Math.Min(count, MAX_CONTACTS_VISIBLE)) + 4
+            ? HEADER_HEIGHT + 2 + 8 + ((ROW_HEIGHT + ROW_MARGIN) * Math.Min(count, MAX_CONTACTS_VISIBLE)) + 10
             : MIN_HEIGHT;
 
         var workArea = Screen.FromPoint(Cursor.Position).WorkingArea;
@@ -117,7 +119,23 @@ public partial class Form1 : Form
             var cp = base.CreateParams;
             cp.ClassStyle |= 0x00020000; // CS_DROPSHADOW
             cp.ExStyle |= WS_EX_TOOLWINDOW;
+            cp.Style |= WS_THICKFRAME; // Needed for DWM rounded corners
             return cp;
+        }
+    }
+
+    // Prevent resizing even though WS_THICKFRAME is set
+    private const int WM_NCHITTEST = 0x84;
+    private const int HTCLIENT = 1;
+    protected override void WndProc(ref Message m)
+    {
+        base.WndProc(ref m);
+        if (m.Msg == WM_NCHITTEST)
+        {
+            // Override all non-client hit test results to HTCLIENT
+            // so the resize handles don't work
+            if (m.Result != IntPtr.Zero)
+                m.Result = (IntPtr)HTCLIENT;
         }
     }
 
