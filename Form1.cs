@@ -109,10 +109,10 @@ public partial class Form1 : Form
         }
         else
         {
+            WindowState = FormWindowState.Normal;
             ResizeToFitContacts();
             RefreshContacts();
             PositionAboveTaskbar();
-            WindowState = FormWindowState.Normal;
             Show();
             Activate();
         }
@@ -125,8 +125,16 @@ public partial class Form1 : Form
 
     private int ScaleToDpi(int value96dpi)
     {
-        using var g = CreateGraphics();
-        return (int)(value96dpi * g.DpiY / 96f);
+        try
+        {
+            using var g = CreateGraphics();
+            var scale = g.DpiY / 96f;
+            return scale > 0 ? (int)(value96dpi * scale) : value96dpi;
+        }
+        catch
+        {
+            return value96dpi;
+        }
     }
 
     private void ResizeToFitContacts()
