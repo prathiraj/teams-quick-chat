@@ -31,6 +31,11 @@ jobs:
       - name: Publish
         run: dotnet publish -c Release
 
+      - name: Copy icon to publish folder
+        shell: pwsh
+        run: |
+          Copy-Item icon.ico bin/Release/net9.0-windows/win-x64/publish/icon.ico -Force
+
       - name: Create or update release
         uses: softprops/action-gh-release@v2
         with:
@@ -43,7 +48,8 @@ jobs:
             1. Download `TeamsQuickChat.exe` and `icon.ico` — place them in the same folder
             2. Run `TeamsQuickChat.exe`
             3. Find the chat-bubble icon in your system tray
-            4. Requires [.NET 9 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)
+
+            No prerequisites — the exe is fully self-contained.
           files: |
             bin/Release/net9.0-windows/win-x64/publish/TeamsQuickChat.exe
             bin/Release/net9.0-windows/win-x64/publish/icon.ico

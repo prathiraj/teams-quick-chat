@@ -57,12 +57,13 @@ public partial class Form1 : Form
             Visible = true
         };
 
-        // Load icon from exe or fall back to a default
+        // Load icon: try alongside exe, then from exe's own icon, then system default
         var iconPath = Path.Combine(AppContext.BaseDirectory, "icon.ico");
+        var exePath = Environment.ProcessPath;
         if (File.Exists(iconPath))
             trayIcon.Icon = new Icon(iconPath);
-        else if (Icon != null)
-            trayIcon.Icon = Icon;
+        else if (exePath is not null && File.Exists(exePath))
+            trayIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(exePath);
         else
             trayIcon.Icon = SystemIcons.Application;
 
