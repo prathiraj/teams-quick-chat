@@ -1,6 +1,6 @@
 # Teams Quick Chat
 
-A lightweight Windows system-tray app that lets you **one-click open a Microsoft Teams 1:1 chat** with any pinned contact. Built with C# WinForms (.NET 9).
+A lightweight Windows system-tray app that lets you **one-click open Microsoft Teams chats** with pinned people or saved chat shortcuts. Built with C# WinForms (.NET 9).
 
 ![Flyout demo](https://img.shields.io/badge/platform-Windows-blue) ![.NET 9](https://img.shields.io/badge/.NET-9.0-purple)
 
@@ -10,7 +10,7 @@ A lightweight Windows system-tray app that lets you **one-click open a Microsoft
 - ⚡ **Instant Teams chat** — opens directly via `msteams:` protocol (no browser roundtrip)
 - 📋 **Flyout UI** — borderless popup with rounded corners, positioned above the tray icon
 - 🔀 **Drag & drop reordering** — rearrange contacts by dragging, order persists automatically
-- ➕ **Add contacts** — built-in dialog to add new contacts (name + email)
+- ➕ **Add contacts and chat shortcuts** — add people by email or paste copied Teams chat links
 - ☁️ **OneDrive roaming** — contacts sync across devices automatically
 - 🔄 **Auto-update** — check for new versions from the tray icon context menu
 - 🚫 **No Alt-Tab clutter** — hidden from the app switcher
@@ -68,8 +68,8 @@ If you used the installer, auto-start is configured during setup. For portable i
 | Action | Result |
 |---|---|
 | **Left-click** tray icon | Toggle the contact flyout open/closed |
-| **Click a contact name** | Opens Teams 1:1 chat with that person |
-| **Click +** | Add a new contact (name + email) |
+| **Click a contact name** | Opens the Teams 1:1 chat or saved chat shortcut |
+| **Click +** | Add by email address or pasted Teams chat link |
 | **Right-click** a contact | Context menu with **Remove** option |
 | **Drag** a contact up/down | Reorder the list (saved automatically) |
 | **Right-click** tray icon | **Check for updates** · **Exit** |
@@ -100,18 +100,29 @@ Environment variables like `%USERPROFILE%` are expanded automatically.
 ```json
 [
   { "Name": "Alice", "Email": "alice@contoso.com" },
-  { "Name": "Bob", "Email": "bob@contoso.com" }
+  {
+    "Name": "Project chat",
+    "TeamsLink": "msteams:/l/chat/19:7cc41a9f969241a5b4cf65d615126876@thread.v2/conversations?context=%7B%22contextType%22%3A%22chat%22%7D"
+  }
 ]
 ```
 
-You can edit this file manually if you prefer.
+Older email-only entries remain supported. You can edit this file manually if you prefer.
 
 ## How it works
 
-The app uses the Microsoft Teams deep link protocol to open chats directly in the desktop client:
+The app uses the Microsoft Teams deep link protocol to open chats directly in the desktop client.
+
+Email contacts are opened with:
 
 ```
 msteams:/l/chat/0/0?users=<email>
+```
+
+Teams chat links copied from Teams are stored by replacing the `https://teams.microsoft.com` prefix with `msteams:`:
+
+```
+https://teams.microsoft.com/l/chat/...  ->  msteams:/l/chat/...
 ```
 
 This bypasses the browser entirely — Teams opens straight to the chat window.
@@ -125,7 +136,7 @@ teams-quick-chat/
 ├── Form1.Designer.cs       # WinForms designer partial
 ├── ContactStore.cs         # Contact CRUD with configurable JSON persistence
 ├── TeamsDeepLink.cs        # msteams: protocol launcher
-├── AddContactDialog.cs     # Modal dialog for adding contacts
+├── AddContactDialog.cs     # Modal dialog for adding contacts and chat shortcuts
 ├── AppInfo.cs              # Version and repo metadata for update checker
 ├── UpdateChecker.cs        # GitHub release-based auto-update
 ├── NoHScrollFlowPanel.cs   # FlowLayoutPanel subclass that suppresses horizontal scrollbar

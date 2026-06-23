@@ -429,13 +429,11 @@ public partial class Form1 : Form
             grip.Location = new Point(w - grip.Width - 16, (h - grip.Height) / 2);
         };
 
-        var email = contact.Email;
-
         // Right-click context menu for remove
         var ctxMenu = new ContextMenuStrip();
         ctxMenu.Items.Add("Remove", null, (_, _) =>
         {
-            ContactStore.Remove(email);
+            ContactStore.Remove(contact);
             RefreshContacts();
         });
         row.ContextMenuStrip = ctxMenu;
@@ -455,9 +453,9 @@ public partial class Form1 : Form
         }
 
         // Click opens chat
-        row.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.OpenChat(email); };
-        nameLabel.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.OpenChat(email); };
-        avatar.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.OpenChat(email); };
+        row.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.Open(contact); };
+        nameLabel.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.Open(contact); };
+        avatar.Click += (_, _) => { if (!_isDragging) TeamsDeepLink.Open(contact); };
 
         // Drag-and-drop reordering
         void OnMouseDown(object? s, MouseEventArgs e) { if (e.Button == MouseButtons.Left) DragStart(row, e); }
