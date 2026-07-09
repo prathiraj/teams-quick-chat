@@ -83,7 +83,15 @@ public class AddContactDialog : Form
 
     private bool SaveContact()
     {
-        return linkRadio.Checked ? SaveTeamsLinkShortcut() : SaveEmailContact();
+        try
+        {
+            return linkRadio.Checked ? SaveTeamsLinkShortcut() : SaveEmailContact();
+        }
+        catch (ContactStoreUnavailableException ex)
+        {
+            ShowValidation(ex.Message);
+            return false;
+        }
     }
 
     private bool SaveEmailContact()

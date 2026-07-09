@@ -25,10 +25,31 @@ public record Contact
     };
 }
 
+/// <summary>
+/// Thrown when the contact store cannot be reached because its backing
+/// cloud storage (e.g. OneDrive) is not available — most commonly because
+/// the OneDrive/cloud file provider process is not running.
+/// </summary>
+public sealed class ContactStoreUnavailableException : Exception
+{
+    public ContactStoreUnavailableException(string message, Exception inner)
+        : base(message, inner) { }
+}
+
 public static class ContactStore
 {
     private static readonly string DataDir = ResolveDataDir();
     private static readonly string FilePath = Path.Combine(DataDir, "contacts.json");
+
+    // Win32 error codes in the ERROR_CLOUD_FILE_* family (winerror.h). These
+    // surface as IOException with HResult == HRESULT_FROM_WIN32(code) when a
+    // OneDrive placeholder can't be hydrated (e.g. OneDrive isn't running).
+    private static readonly HashSet<int> CloudFileErrorCodes =
+    [
+        358, 362, 363, 364, 365, 366, 374, 375, 377, 378, 379, 380, 381, 382,
+        383, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398,
+        404, 426, 434, 475
+    ];
 
     private static string ResolveDataDir()
     {
@@ -60,23 +81,54 @@ public static class ContactStore
 
     public static List<Contact> Load()
     {
-        if (!File.Exists(FilePath))
-            return [];
+        try
+        {
+            if (!File.Exists(FilePath))
+                return [];
 
-        var json = File.ReadAllText(FilePath);
-        return JsonSerializer.Deserialize<List<Contact>>(json) ?? [];
+            var json = File.ReadAllText(FilePath);
+            return JsonSerializer.Deserialize<List<Contact>>(json) ?? [];
+        }
+        catch (IOException ex) when (IsCloudProviderUnavailable(ex))
+        {
+            throw CloudUnavailable(ex);
+        }
     }
 
     public static void Save(List<Contact> contacts)
     {
-        Directory.CreateDirectory(DataDir);
-        var json = JsonSerializer.Serialize(contacts, new JsonSerializerOptions
+        try
         {
-            WriteIndented = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        });
-        File.WriteAllText(FilePath, json);
+            Directory.CreateDirectory(DataDir);
+            var json = JsonSerializer.Serialize(contacts, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            });
+            File.WriteAllText(FilePath, json);
+        }
+        catch (IOException ex) when (IsCloudProviderUnavailable(ex))
+        {
+            throw CloudUnavailable(ex);
+        }
     }
+
+    private static bool IsCloudProviderUnavailable(IOException ex)
+    {
+        // .NET wraps Win32 failures as HResult == HRESULT_FROM_WIN32(code),
+        // i.e. 0x8007xxxx. Extract the Win32 code and match the cloud-file set.
+        if ((ex.HResult & unchecked((int)0xFFFF0000)) != unchecked((int)0x80070000))
+            return false;
+
+        return CloudFileErrorCodes.Contains(ex.HResult & 0xFFFF);
+    }
+
+    private static ContactStoreUnavailableException CloudUnavailable(IOException ex) =>
+        new(
+            "Your contacts are stored in OneDrive, but the cloud files aren't " +
+            "available right now. This usually means OneDrive isn't running. " +
+            "Start OneDrive (or wait for it to finish syncing) and try again.",
+            ex);
 
     public static void Add(string name, string email)
     {
