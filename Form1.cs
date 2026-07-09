@@ -308,7 +308,17 @@ public partial class Form1 : Form
         contactPanel.SuspendLayout();
         contactPanel.Controls.Clear();
 
-        var contacts = ContactStore.Load();
+        List<Contact> contacts;
+        try
+        {
+            contacts = ContactStore.Load();
+        }
+        catch (ContactStoreUnavailableException ex)
+        {
+            ShowStorageUnavailable(ex.Message);
+            contactPanel.ResumeLayout();
+            return;
+        }
 
         if (contacts.Count == 0)
         {
@@ -334,6 +344,21 @@ public partial class Form1 : Form
         }
 
         contactPanel.ResumeLayout();
+    }
+
+    private void ShowStorageUnavailable(string message)
+    {
+        var notice = new Label
+        {
+            Text = message,
+            Font = new Font("Segoe UI", 9.5f),
+            ForeColor = Color.FromArgb(180, 60, 60),
+            TextAlign = ContentAlignment.MiddleCenter,
+            AutoSize = false,
+            Size = new Size(270, 140),
+            Padding = new Padding(12, 20, 12, 0)
+        };
+        contactPanel.Controls.Add(notice);
     }
 
     private static readonly Color PrimaryLight = Color.FromArgb(237, 237, 255);
@@ -433,7 +458,15 @@ public partial class Form1 : Form
         var ctxMenu = new ContextMenuStrip();
         ctxMenu.Items.Add("Remove", null, (_, _) =>
         {
-            ContactStore.Remove(contact);
+            try
+            {
+                ContactStore.Remove(contact);
+            }
+            catch (ContactStoreUnavailableException ex)
+            {
+                ShowStorageError(ex.Message);
+                return;
+            }
             RefreshContacts();
         });
         row.ContextMenuStrip = ctxMenu;
@@ -528,10 +561,29 @@ public partial class Form1 : Form
                     reordered.Add(c);
             }
             if (reordered.Count > 0)
-                ContactStore.Save(reordered);
+            {
+                try
+                {
+                    ContactStore.Save(reordered);
+                }
+                catch (ContactStoreUnavailableException ex)
+                {
+                    ShowStorageError(ex.Message);
+                    RefreshContacts();
+                }
+            }
         }
 
         _dragRow = null;
         _isDragging = false;
+    }
+
+    private static void ShowStorageError(string message)
+    {
+        MessageBox.Show(
+            message,
+            "Teams Quick Chat",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Warning);
     }
 }

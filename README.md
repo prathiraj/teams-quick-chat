@@ -95,6 +95,13 @@ To override, create an `appsettings.json` file next to the exe:
 
 Environment variables like `%USERPROFILE%` are expanded automatically.
 
+> **OneDrive not running?** When contacts live in OneDrive and the cloud files
+> can't be reached (for example, OneDrive isn't running), the app no longer
+> crashes on startup. It stays in the tray and shows a short notice explaining
+> that OneDrive isn't available. Start OneDrive and reopen the window — contacts
+> reload automatically. Setting a local `DataDir` via `appsettings.json` avoids
+> the dependency on OneDrive entirely.
+
 ### Contacts file format
 
 ```json
