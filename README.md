@@ -11,6 +11,7 @@ A lightweight Windows system-tray app that lets you **one-click open Microsoft T
 - 📋 **Flyout UI** — borderless popup with rounded corners, positioned above the tray icon
 - 🔀 **Drag & drop reordering** — rearrange contacts by dragging, order persists automatically
 - ➕ **Add contacts and chat shortcuts** — add people by email or paste copied Teams chat links
+- 📌 **Pin chats to the taskbar** — right-click any contact or saved chat for a direct taskbar shortcut
 - ☁️ **OneDrive roaming** — contacts sync across devices automatically
 - 🔄 **Auto-update** — check for new versions from the tray icon context menu
 - 🚫 **No Alt-Tab clutter** — hidden from the app switcher
@@ -21,7 +22,7 @@ A lightweight Windows system-tray app that lets you **one-click open Microsoft T
 
 ### Prerequisites
 
-- Windows 10/11
+- Windows 10 version 1809 or later, or Windows 11
 - Microsoft Teams desktop app (for `msteams:` protocol handling)
 
 > **Note:** The installer and release binaries are self-contained — no .NET runtime install needed.
@@ -50,7 +51,7 @@ dotnet publish -c Release
 
 The exe will be at:
 ```
-bin\Release\net9.0-windows\win-x64\publish\TeamsQuickChat.exe
+bin\Release\net9.0-windows10.0.17763.0\win-x64\publish\TeamsQuickChat.exe
 ```
 
 ### Pin to system tray
@@ -70,10 +71,23 @@ If you used the installer, auto-start is configured during setup. For portable i
 | **Left-click** tray icon | Toggle the contact flyout open/closed |
 | **Click a contact name** | Opens the Teams 1:1 chat or saved chat shortcut |
 | **Click +** | Add by email address or pasted Teams chat link |
-| **Right-click** a contact | Context menu with **Remove** option |
+| **Right-click** a contact | **Pin to taskbar** or **Remove** |
 | **Drag** a contact up/down | Reorder the list (saved automatically) |
 | **Right-click** tray icon | **Check for updates** · **Exit** |
 | **Click outside** the flyout | Auto-hides |
+
+### Pin a chat to the taskbar
+
+Right-click a contact or saved chat and select **Pin to taskbar**. On supported
+Windows 11 versions, confirm the Windows pin prompt. The taskbar shortcut opens
+that chat directly without opening the Teams Quick Chat flyout.
+
+If Windows cannot show the automatic prompt, Teams Quick Chat opens the
+shortcut's Start menu folder instead. Right-click the selected shortcut and
+choose **Pin to taskbar** manually. Each shortcut has a separate taskbar
+identity, so multiple chats can be pinned at once. Remove one with the taskbar's
+standard **Unpin from taskbar** command. The installer removes these generated
+pins when Teams Quick Chat is uninstalled.
 
 ## Configuration
 
@@ -143,6 +157,10 @@ teams-quick-chat/
 ├── Form1.Designer.cs       # WinForms designer partial
 ├── ContactStore.cs         # Contact CRUD with configurable JSON persistence
 ├── TeamsDeepLink.cs        # msteams: protocol launcher
+├── TaskbarPinning.cs       # Per-chat shortcut creation and launch argument handling
+├── TaskbarPinRequestForm.cs # Windows taskbar pin request and manual fallback
+├── ShellShortcut.cs        # Windows .lnk creation with AppUserModelID metadata
+├── AppIdentity.cs          # Process AppUserModelID registration
 ├── AddContactDialog.cs     # Modal dialog for adding contacts and chat shortcuts
 ├── AppInfo.cs              # Version and repo metadata for update checker
 ├── UpdateChecker.cs        # GitHub release-based auto-update

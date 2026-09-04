@@ -454,8 +454,24 @@ public partial class Form1 : Form
             grip.Location = new Point(w - grip.Width - 16, (h - grip.Height) / 2);
         };
 
-        // Right-click context menu for remove
+        // Right-click context menu
         var ctxMenu = new ContextMenuStrip();
+        ctxMenu.Items.Add("Pin to taskbar", null, (_, _) =>
+        {
+            try
+            {
+                TaskbarPinning.StartPinRequest(contact);
+            }
+            catch (TaskbarPinningException ex)
+            {
+                MessageBox.Show(
+                    ex.Message,
+                    "Teams Quick Chat",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        });
+        ctxMenu.Items.Add(new ToolStripSeparator());
         ctxMenu.Items.Add("Remove", null, (_, _) =>
         {
             try
@@ -472,6 +488,7 @@ public partial class Form1 : Form
         row.ContextMenuStrip = ctxMenu;
         nameLabel.ContextMenuStrip = ctxMenu;
         avatar.ContextMenuStrip = ctxMenu;
+        grip.ContextMenuStrip = ctxMenu;
 
         // Hover highlight
         void SetHover(Control c, bool enter)

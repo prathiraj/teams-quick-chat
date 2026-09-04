@@ -6,6 +6,7 @@ namespace TeamsQuickChat;
 public static class TeamsDeepLink
 {
     private const string TeamsHost = "teams.microsoft.com";
+    private const string TeamsScheme = "msteams";
 
     public static bool TryNormalizeTeamsWebLink(string input, out string teamsLink)
     {
@@ -17,7 +18,7 @@ public static class TeamsDeepLink
 
         if (!string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ||
             !string.Equals(uri.Host, TeamsHost, StringComparison.OrdinalIgnoreCase) ||
-            !uri.AbsolutePath.StartsWith("/l/chat/", StringComparison.OrdinalIgnoreCase))
+            !IsChatPath(uri.AbsolutePath))
         {
             return false;
         }
@@ -28,26 +29,33 @@ public static class TeamsDeepLink
 
     public static void Open(Contact contact)
     {
+        OpenUri(GetUri(contact));
+    }
+
+    public static string GetUri(Contact contact)
+    {
         if (contact.IsTeamsLink && !string.IsNullOrWhiteSpace(contact.TeamsLink))
-        {
-            OpenUri(contact.TeamsLink);
-            return;
-        }
+            return contact.TeamsLink;
 
         if (!string.IsNullOrWhiteSpace(contact.Email))
-        {
-            OpenChat(contact.Email);
-            return;
-        }
+            return CreateChatUri(contact.Email);
 
         throw new InvalidOperationException("Contact must have either an email address or a Teams link.");
     }
 
-    public static void OpenChat(string email)
+    internal static void OpenPinnedChat(string uri) => OpenUri(uri);
+
+    internal static bool IsSupportedChatUri(string uri)
+    {
+        return Uri.TryCreate(uri, UriKind.Absolute, out var parsed) &&
+            string.Equals(parsed.Scheme, TeamsScheme, StringComparison.OrdinalIgnoreCase) &&
+            IsChatPath(parsed.AbsolutePath);
+    }
+
+    private static string CreateChatUri(string email)
     {
         var encoded = HttpUtility.UrlEncode(email);
-        var uri = $"msteams:/l/chat/0/0?users={encoded}";
-        OpenUri(uri);
+        return $"msteams:/l/chat/0/0?users={encoded}";
     }
 
     private static void OpenUri(string uri)
@@ -58,4 +66,7 @@ public static class TeamsDeepLink
             UseShellExecute = true
         });
     }
+
+    private static bool IsChatPath(string path) =>
+        path.StartsWith("/l/chat/", StringComparison.OrdinalIgnoreCase);
 }

@@ -31,6 +31,7 @@ $issPath = Join-Path $repoRoot "installer\TeamsQuickChat.iss"
 Write-Host "==> Building TeamsQuickChat $tag (self-contained) ..." -ForegroundColor Cyan
 dotnet publish $repoRoot -c Release -o $publishDir /p:Version=$Version
 if ($LASTEXITCODE -ne 0) { Write-Error "Build failed"; exit 1 }
+Copy-Item (Join-Path $repoRoot "icon.ico") $publishDir -Force
 
 # --- Portable zip ---
 Write-Host "==> Creating $zipName ..." -ForegroundColor Cyan
@@ -52,7 +53,7 @@ foreach ($p in $isccPaths) {
 $installerPath = $null
 if ($iscc) {
     Write-Host "==> Building installer with Inno Setup ..." -ForegroundColor Cyan
-    & $iscc "/DAppVersion=$Version" $issPath
+    & $iscc "/DAppVersion=$Version" "/DPublishDir=$publishDir" $issPath
     if ($LASTEXITCODE -ne 0) { Write-Error "Installer build failed"; exit 1 }
 
     $installerPath = Join-Path $repoRoot "installer\Output\$installerName"
