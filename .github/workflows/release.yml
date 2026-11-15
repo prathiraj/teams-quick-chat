@@ -3,6 +3,7 @@ name: Build, Release & Deploy Pages
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -58,6 +59,8 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    outputs:
+      notarized: ${{ steps.signing.outputs.notarized }}
     steps:
       - uses: actions/checkout@v5
 
@@ -82,10 +85,94 @@ jobs:
           cd macos
           swift test
 
-      - name: Build universal macOS app, DMG, and ZIP
+      - name: Import Apple Developer ID certificate (if configured)
+        id: signing
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          if [[ -z "$APPLE_CERTIFICATE_P12_BASE64" ]]; then
+            echo "APPLE_CERTIFICATE_P12_BASE64 is not configured; falling back to ad-hoc signing."
+            echo "notarized=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          KEYCHAIN_PATH="$RUNNER_TEMP/build-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          CERT_PATH="$RUNNER_TEMP/certificate.p12"
+
+          printf '%s' "$APPLE_CERTIFICATE_P12_BASE64" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import Apple Developer ID intermediate CAs so leaf cert trust resolves on clean runners
+          for ca_url in \
+            "https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer" \
+            "https://www.apple.com/certificateauthority/DeveloperIDCA.cer"; do
+            CA_FILE="$RUNNER_TEMP/$(basename "$ca_url")"
+            if curl -fsSL "$ca_url" -o "$CA_FILE"; then
+              security import "$CA_FILE" -k "$KEYCHAIN_PATH" -A || true
+              rm -f "$CA_FILE"
+            fi
+          done
+
+          security import "$CERT_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+          rm -f "$CERT_PATH"
+
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | sed -n 's/.*"\(Developer ID Application:[^"]*\)".*/\1/p' \
+            | head -n 1 || true)"
+          if [[ -z "$IDENTITY" ]]; then
+            echo "Error: Imported .p12 did not contain a valid 'Developer ID Application' certificate." >&2
+            security find-identity -v "$KEYCHAIN_PATH" >&2 || true
+            exit 1
+          fi
+
+          echo "Found signing identity: $IDENTITY"
+          echo "CODESIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "SIGNING_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
+          if [[ ( -n "$APPLE_ID" && -n "$APPLE_APP_SPECIFIC_PASSWORD" && -n "$APPLE_TEAM_ID" ) || \
+                ( -n "$APPLE_API_KEY_ID" && -n "$APPLE_API_ISSUER_ID" && -n "$APPLE_API_KEY_P8_BASE64" ) ]]; then
+            echo "notarized=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "notarized=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build, sign, and notarize universal macOS app, DMG, and ZIP
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: |
           chmod +x macos/scripts/package_macos.sh
           ./macos/scripts/package_macos.sh "${{ steps.version.outputs.version }}"
+
+      - name: Clean up temporary signing keychain
+        if: always()
+        run: |
+          if [[ -n "${SIGNING_KEYCHAIN_PATH:-}" && -f "${SIGNING_KEYCHAIN_PATH:-}" ]]; then
+            security delete-keychain "$SIGNING_KEYCHAIN_PATH" || true
+          fi
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -112,20 +199,33 @@ jobs:
           name: macos-dist
           path: release-assets
 
+      - name: Generate release notes
+        id: notes
+        env:
+          VERSION: ${{ needs.build-windows.outputs.version }}
+          MACOS_NOTARIZED: ${{ needs.build-macos.outputs.notarized }}
+        run: |
+          {
+            echo "### Windows"
+            echo "- **Installer (recommended):** Download and run **\`TeamsQuickChatSetup-${VERSION}.exe\`** — installs with optional auto-start on login."
+            echo "- **Portable:** Download \`TeamsQuickChat.exe\` + \`icon.ico\` and run directly (self-contained, no .NET install needed)."
+            echo ""
+            echo "### macOS (Apple Silicon & Intel)"
+            echo "- **DMG Installer (recommended):** Download **\`TeamsQuickChat-${VERSION}-macos.dmg\`**, open it, and drag **Teams Quick Chat** to **Applications**."
+            echo "- **ZIP Archive:** Or download \`TeamsQuickChat-${VERSION}-macos.zip\` and extract \`Teams Quick Chat.app\`."
+            if [[ "$MACOS_NOTARIZED" == "true" ]]; then
+              echo "- Signed with Apple Developer ID and notarized by Apple — opens with zero Gatekeeper prompts."
+            else
+              echo "- *First-launch note:* If macOS Gatekeeper blocks first open before Apple notarization secrets are configured, open **System Settings → Privacy & Security → Open Anyway** (or run \`xattr -dr com.apple.quarantine \"/Applications/Teams Quick Chat.app\"\` in Terminal)."
+            fi
+          } > release-notes.md
+
       - name: Create or update release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.build-windows.outputs.version }}
           name: v${{ needs.build-windows.outputs.version }}
-          body: |
-            ### Windows
-            - **Installer (recommended):** Download and run **`TeamsQuickChatSetup-${{ needs.build-windows.outputs.version }}.exe`** — installs with optional auto-start on login.
-            - **Portable:** Download `TeamsQuickChat.exe` + `icon.ico` and run directly (self-contained, no .NET install needed).
-
-            ### macOS (Apple Silicon & Intel)
-            - **DMG Installer (recommended):** Download **`TeamsQuickChat-${{ needs.build-windows.outputs.version }}-macos.dmg`**, open it, and drag **Teams Quick Chat** to **Applications**.
-            - **ZIP Archive:** Or download `TeamsQuickChat-${{ needs.build-windows.outputs.version }}-macos.zip` and extract `Teams Quick Chat.app`.
-            - *First-launch note:* Because this open-source app is ad-hoc signed, if macOS Gatekeeper prompts on first open, Control-click **Teams Quick Chat.app** → **Open** (or run `xattr -cr "/Applications/Teams Quick Chat.app"`).
+          body_path: release-notes.md
           files: |
             release-assets/TeamsQuickChatSetup-${{ needs.build-windows.outputs.version }}.exe
             release-assets/TeamsQuickChat.exe

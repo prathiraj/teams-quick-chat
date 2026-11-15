@@ -25,3 +25,14 @@ Desktop.ini
 
 ## User data (stored in OneDrive, not in repo)
 contacts.json
+
+## Code-signing certificates & keys (never commit)
+*.p12
+*.pfx
+*.cer
+*.crt
+*.key
+*.pem
+*.p8
+*.certSigningRequest
+*.csr

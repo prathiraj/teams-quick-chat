@@ -6,7 +6,7 @@ public enum AppInfo {
     public static let chatShortcutBundlePrefix = bundleIdentifier + ".chat."
     public static let pinnedChatURIInfoKey = "TeamsQuickChatPinnedURI"
 
-    public static let fallbackVersion = "1.9.0"
+    public static let fallbackVersion = "1.9.1"
 
     public static var version: String {
         if Bundle.main.bundleIdentifier == bundleIdentifier,

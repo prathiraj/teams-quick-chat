@@ -39,7 +39,7 @@ A lightweight native **Windows system-tray** and **macOS menu-bar** app that let
 1. Download `TeamsQuickChat-x.x.x-macos.dmg` from the [Releases](../../releases) page.
 2. Open the `.dmg` and drag **Teams Quick Chat** into **Applications**.
 3. Launch **Teams Quick Chat** from Applications or Spotlight.
-   > **First-launch note:** Because this open-source app is ad-hoc signed rather than notarized with a paid Apple Developer ID, if macOS Gatekeeper blocks first launch, **Control-click** `Teams Quick Chat.app` → **Open** (or go to **System Settings → Privacy & Security → Open Anyway**, or run `xattr -cr "/Applications/Teams Quick Chat.app"`).
+   > **Gatekeeper note:** Official releases built with Apple Developer ID credentials open with zero warnings. If testing an unsigned/ad-hoc build downloaded via browser, open **System Settings → Privacy & Security → Open Anyway** or run `xattr -dr com.apple.quarantine "/Applications/Teams Quick Chat.app"`.
 4. Enable **Start at Login** anytime from the menu bar icon menu (`•••` → **Start at Login**) or **Settings…** (`⌘,`).
 
 #### Option 2: Build from source (macOS)
@@ -194,7 +194,8 @@ teams-quick-chat/
 │   ├── Tests/
 │   │   └── TeamsQuickChatCoreTests/ # Unit tests for JSON compat, deep links, OneDrive, Dock shortcuts
 │   └── scripts/
-│       └── package_macos.sh    # Universal (arm64 + x86_64) .app, .icns, codesign, .dmg & .zip builder
+│       ├── package_macos.sh        # Universal .app, .icns, Developer ID/ad-hoc sign, notarize, .dmg & .zip
+│       └── setup_apple_signing.sh  # Helper to generate Developer ID CSR/.p12 & upload GitHub Secrets
 ├── docs/
 │   └── index.html              # GitHub Pages landing page
 └── .github/
@@ -215,6 +216,28 @@ cd macos && swift test
 dotnet build
 dotnet publish -c Release
 ```
+
+### Apple Code Signing & Notarization (Maintainers)
+
+`macos/scripts/package_macos.sh` and `.github/workflows/release.yml` automatically sign with **Developer ID Application** (`--options runtime --timestamp`), notarize via `xcrun notarytool`, and staple tickets to both `.app` and `.dmg` whenever credentials are present (falling back to ad-hoc signing otherwise).
+
+To configure GitHub Actions signing & notarization (no Xcode install required):
+
+```bash
+# 1. Generate a CSR locally (stored in ~/.teams-quick-chat-signing, chmod 700)
+./macos/scripts/setup_apple_signing.sh csr "Your Name" "you@example.com"
+
+# 2. Upload the CSR at https://developer.apple.com/account/resources/certificates/add
+#    (select "Developer ID Application"), download developerID_application.cer, then run:
+./macos/scripts/setup_apple_signing.sh github-secrets ~/Downloads/developerID_application.cer
+
+# 3. Trigger a signed & notarized release anytime:
+gh workflow run release.yml
+```
+
+Supported GitHub Repository Secrets:
+- `APPLE_CERTIFICATE_P12_BASE64` and `APPLE_CERTIFICATE_PASSWORD` (Developer ID Application `.p12`)
+- `APPLE_ID`, `APPLE_TEAM_ID`, and `APPLE_APP_SPECIFIC_PASSWORD` *(or App Store Connect API key: `APPLE_API_KEY_P8_BASE64`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`)*
 
 ## License
 
