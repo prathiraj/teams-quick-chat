@@ -4,6 +4,10 @@ obj/
 dist/
 publish/
 installer/Output/
+.build/
+macos/.build/
+macos/dist/
+macos/.swiftpm/
 
 ## PyInstaller (legacy)
 *.spec

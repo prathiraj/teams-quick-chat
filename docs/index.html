@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teams Quick Chat — One-click Teams chats from your taskbar</title>
+    <title>Teams Quick Chat — One-click Teams chats for Windows &amp; macOS</title>
     <style>
         :root {
             --bg: #fafafa;
@@ -321,13 +321,13 @@
 <section class="hero">
     <div class="hero-icon">💬</div>
     <h1>Teams Quick Chat</h1>
-    <p>One-click Teams chats with your favourite people and groups, right from the system tray.</p>
+    <p>One-click Microsoft Teams chats with your favourite people and groups — native for the Windows system tray and macOS menu bar.</p>
     <div class="hero-buttons">
-        <a href="https://github.com/prathiraj/teams-quick-chat" class="btn btn-primary">
-            ⬇ View on GitHub
+        <a href="https://github.com/prathiraj/teams-quick-chat/releases/latest" class="btn btn-primary">
+            ⬇ Download for Windows &amp; macOS
         </a>
-        <a href="https://github.com/prathiraj/teams-quick-chat#installation" class="btn btn-outline">
-            📖 Installation
+        <a href="https://github.com/prathiraj/teams-quick-chat" class="btn btn-outline">
+            ★ View on GitHub
         </a>
     </div>
 </section>
@@ -371,8 +371,8 @@
 <section class="features">
     <div class="feature-card">
         <div class="feature-icon">🔔</div>
-        <h3>System Tray Icon</h3>
-        <p>Lives in your notification area. Always one click away, never clutters Alt-Tab.</p>
+        <h3>Menu Bar &amp; System Tray</h3>
+        <p>Lives in your macOS menu bar or Windows notification area. Always one click away, hidden from Alt-Tab and Cmd-Tab.</p>
     </div>
     <div class="feature-card">
         <div class="feature-icon">⚡</div>
@@ -381,8 +381,8 @@
     </div>
     <div class="feature-card">
         <div class="feature-icon">📌</div>
-        <h3>Taskbar Chat Shortcuts</h3>
-        <p>Right-click a contact or saved chat to pin a direct shortcut. Pin several chats side by side.</p>
+        <h3>Taskbar &amp; Dock Shortcuts</h3>
+        <p>Right-click any contact or saved chat to pin a direct shortcut to your Windows Taskbar or macOS Dock &amp; Spotlight.</p>
     </div>
     <div class="feature-card">
         <div class="feature-icon">🔀</div>
@@ -391,18 +391,18 @@
     </div>
     <div class="feature-card">
         <div class="feature-icon">☁️</div>
-        <h3>OneDrive Roaming</h3>
-        <p>Contacts stored in OneDrive — sync across all your devices automatically.</p>
+        <h3>Cross-Device OneDrive Sync</h3>
+        <p>Shares the same <code>contacts.json</code> format across Windows and macOS via OneDrive — or use any local folder.</p>
     </div>
     <div class="feature-card">
         <div class="feature-icon">📐</div>
-        <h3>Auto-sizing Flyout</h3>
-        <p>Window height adapts to the number of contacts. No wasted space.</p>
+        <h3>Adaptive Native UI</h3>
+        <p>Height adapts to your contacts, with native Dark &amp; Light Mode support on macOS and crisp rounded flyouts on Windows.</p>
     </div>
     <div class="feature-card">
         <div class="feature-icon">🪶</div>
-        <h3>Lightweight</h3>
-        <p>Single 200KB exe. Built with C# WinForms on .NET 9. Minimal resource usage.</p>
+        <h3>100% Native &amp; Lightweight</h3>
+        <p>Built natively with C# WinForms (.NET 9) on Windows and Swift (AppKit &amp; SwiftUI) on macOS. Zero Electron bloat.</p>
     </div>
 </section>
 
@@ -423,34 +423,38 @@
     <div class="install-step">
         <div class="step-num">1</div>
         <div class="step-content">
-            <h3>Clone the repo</h3>
-            <pre><code>git clone https://github.com/prathiraj/teams-quick-chat.git
-cd teams-quick-chat</code></pre>
+            <h3>Install the latest release</h3>
+            <p><strong>macOS:</strong> Download <code>TeamsQuickChat-x.x.x-macos.dmg</code> from <a href="https://github.com/prathiraj/teams-quick-chat/releases/latest">GitHub Releases</a> and drag <strong>Teams Quick Chat</strong> to Applications.</p>
+            <p style="margin-top: 6px"><strong>Windows:</strong> Download and run <code>TeamsQuickChatSetup-x.x.x.exe</code> from <a href="https://github.com/prathiraj/teams-quick-chat/releases/latest">GitHub Releases</a>.</p>
         </div>
     </div>
 
     <div class="install-step">
         <div class="step-num">2</div>
         <div class="step-content">
-            <h3>Build &amp; publish</h3>
-            <pre><code>dotnet publish -c Release</code></pre>
-            <p style="margin-top: 8px">Output: <code>bin\Release\net9.0-windows10.0.17763.0\win-x64\publish\TeamsQuickChat.exe</code></p>
+            <h3>Or build from source</h3>
+            <pre><code># macOS (Swift universal .app + .dmg)
+./macos/scripts/package_macos.sh
+
+# Windows (.NET 9 WinForms)
+dotnet publish -c Release</code></pre>
         </div>
     </div>
 
     <div class="install-step">
         <div class="step-num">3</div>
         <div class="step-content">
-            <h3>Run &amp; pin chats</h3>
-            <p>Run the exe, right-click a saved chat, and choose <strong>Pin to taskbar</strong>.</p>
+            <h3>Add contacts &amp; pin favourite chats</h3>
+            <p>Click <strong>+</strong> to add people by email or pasted Teams chat link, then right-click any row to <strong>Pin to Dock…</strong> (macOS) or <strong>Pin to taskbar</strong> (Windows).</p>
         </div>
     </div>
 
     <div class="install-step">
         <div class="step-num">4</div>
         <div class="step-content">
-            <h3>Auto-start (optional)</h3>
-            <p>Press <code>Win+R</code> → <code>shell:startup</code> → drop a shortcut to the exe there.</p>
+            <h3>Start at login (optional)</h3>
+            <p><strong>macOS:</strong> Toggle <strong>Start at Login</strong> from the menu bar icon menu or Settings (<code>⌘,</code>).<br>
+            <strong>Windows:</strong> Enabled in the installer, or drop a shortcut in <code>shell:startup</code>.</p>
         </div>
     </div>
 </section>

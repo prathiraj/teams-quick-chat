@@ -10,8 +10,10 @@ permissions:
   id-token: write
 
 jobs:
-  build-and-release:
+  build-windows:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
 
@@ -31,11 +33,6 @@ jobs:
       - name: Publish
         run: dotnet publish -c Release -o publish
 
-      - name: Copy icon to publish folder
-        shell: pwsh
-        run: |
-          Copy-Item icon.ico publish/icon.ico -Force
-
       - name: Install Inno Setup
         shell: pwsh
         run: |
@@ -45,31 +42,102 @@ jobs:
       - name: Build installer
         shell: pwsh
         run: |
+          Copy-Item icon.ico publish/icon.ico -Force
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=${{ steps.version.outputs.version }} "/DPublishDir=$PWD\publish" installer\TeamsQuickChat.iss
+          New-Item -ItemType Directory -Force -Path win-dist | Out-Null
+          Copy-Item publish/TeamsQuickChat.exe win-dist/
+          Copy-Item publish/icon.ico win-dist/
+          Copy-Item "installer/Output/TeamsQuickChatSetup-${{ steps.version.outputs.version }}.exe" win-dist/
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-dist
+          path: win-dist/*
+          if-no-files-found: error
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Get version from csproj
+        id: version
+        run: |
+          VERSION=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' TeamsQuickChat.csproj | head -n 1 | tr -d '[:space:]')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure Swift 6 toolchain
+        run: |
+          if ! swift --version | grep -qE "Swift version 6\."; then
+            LATEST_XCODE=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -n 1 || true)
+            if [[ -n "$LATEST_XCODE" ]]; then
+              sudo xcode-select -s "$LATEST_XCODE/Contents/Developer"
+            fi
+          fi
+          swift --version
+
+      - name: Run macOS unit tests
+        run: |
+          cd macos
+          swift test
+
+      - name: Build universal macOS app, DMG, and ZIP
+        run: |
+          chmod +x macos/scripts/package_macos.sh
+          ./macos/scripts/package_macos.sh "${{ steps.version.outputs.version }}"
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dist
+          path: |
+            macos/dist/TeamsQuickChat-${{ steps.version.outputs.version }}-macos.dmg
+            macos/dist/TeamsQuickChat-${{ steps.version.outputs.version }}-macos.zip
+          if-no-files-found: error
+
+  release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-dist
+          path: release-assets
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-dist
+          path: release-assets
 
       - name: Create or update release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
+          tag_name: v${{ needs.build-windows.outputs.version }}
+          name: v${{ needs.build-windows.outputs.version }}
           body: |
-            ### Install (recommended)
-            Download and run **`TeamsQuickChatSetup-${{ steps.version.outputs.version }}.exe`** — installs the app with optional auto-start on login.
+            ### Windows
+            - **Installer (recommended):** Download and run **`TeamsQuickChatSetup-${{ needs.build-windows.outputs.version }}.exe`** — installs with optional auto-start on login.
+            - **Portable:** Download `TeamsQuickChat.exe` + `icon.ico` and run directly (self-contained, no .NET install needed).
 
-            ### Portable
-            Or download `TeamsQuickChat.exe` + `icon.ico` and run directly. No installation needed.
-
-            No prerequisites — fully self-contained.
+            ### macOS (Apple Silicon & Intel)
+            - **DMG Installer (recommended):** Download **`TeamsQuickChat-${{ needs.build-windows.outputs.version }}-macos.dmg`**, open it, and drag **Teams Quick Chat** to **Applications**.
+            - **ZIP Archive:** Or download `TeamsQuickChat-${{ needs.build-windows.outputs.version }}-macos.zip` and extract `Teams Quick Chat.app`.
+            - *First-launch note:* Because this open-source app is ad-hoc signed, if macOS Gatekeeper prompts on first open, Control-click **Teams Quick Chat.app** → **Open** (or run `xattr -cr "/Applications/Teams Quick Chat.app"`).
           files: |
-            publish/TeamsQuickChat.exe
-            publish/icon.ico
-            installer/Output/TeamsQuickChatSetup-${{ steps.version.outputs.version }}.exe
+            release-assets/TeamsQuickChatSetup-${{ needs.build-windows.outputs.version }}.exe
+            release-assets/TeamsQuickChat.exe
+            release-assets/icon.ico
+            release-assets/TeamsQuickChat-${{ needs.build-windows.outputs.version }}-macos.dmg
+            release-assets/TeamsQuickChat-${{ needs.build-windows.outputs.version }}-macos.zip
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy-pages:
-    needs: build-and-release
+    needs: release
     runs-on: ubuntu-latest
     environment:
       name: github-pages
